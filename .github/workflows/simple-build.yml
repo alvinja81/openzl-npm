@@ -1,0 +1,66 @@
+name: Build OpenZL CLI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux-x64
+          - os: windows-latest
+            platform: win32-x64
+          - os: macos-latest
+            platform: darwin-x64
+
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Build OpenZL CLI
+        run: |
+          cd openzl
+          make zli BUILD_TYPE=OPT
+          
+      - name: Create binary directory
+        run: |
+          mkdir -p @openzl-cli/build/binaries/${{ matrix.platform }}
+
+      - name: Copy binary (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          cp openzl/cachedObjs/*/zli @openzl-cli/build/binaries/${{ matrix.platform }}/zli
+          chmod +x @openzl-cli/build/binaries/${{ matrix.platform }}/zli
+
+      - name: Copy binary (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          copy openzl\cachedObjs\*\zli.exe @openzl-cli\build\binaries\${{ matrix.platform }}\zli.exe
+
+      - name: Test binary
+        run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            @openzl-cli\build\binaries\${{ matrix.platform }}\zli.exe --version
+          else
+            @openzl-cli/build/binaries/${{ matrix.platform }}/zli --version
+          fi
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: zli-${{ matrix.platform }}
+          path: "@openzl-cli/build/binaries/${{ matrix.platform }}/"

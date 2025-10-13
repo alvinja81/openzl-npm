@@ -4,17 +4,27 @@ OpenZL CLI - High-performance compression tool for Node.js applications.
 
 ## Installation
 
-### Global Installation
+### Global Installation (Recommended)
 
 ```bash
 npm install -g @openzl/cli
 ```
+
+**That's it!** The package automatically detects your platform and installs the correct binary.
 
 ### Local Installation
 
 ```bash
 npm install @openzl/cli
 ```
+
+### Platform Support
+
+- ✅ **macOS** (ARM64, x64) - Fully tested
+- ✅ **Linux** (x64, ARM64) - Built via CI/CD
+- ✅ **Windows** (x64) - Built via CI/CD
+
+**No build tools required!** The package includes pre-built binaries for all supported platforms.
 
 ## Usage
 
