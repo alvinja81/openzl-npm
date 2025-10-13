@@ -1,0 +1,129 @@
+name: Build OpenZL CLI Binaries
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  release:
+    types: [ published ]
+
+jobs:
+  build-binaries:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux-x64
+            arch: x64
+          - os: ubuntu-latest
+            platform: linux-arm64
+            arch: arm64
+          - os: windows-latest
+            platform: win32-x64
+            arch: x64
+          - os: macos-latest
+            platform: darwin-x64
+            arch: x64
+          - os: macos-latest
+            platform: darwin-arm64
+            arch: arm64
+
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build OpenZL CLI
+        run: |
+          cd openzl
+          make zli BUILD_TYPE=OPT
+          
+      - name: Create binary directory
+        run: |
+          mkdir -p @openzl-cli/build/binaries/${{ matrix.platform }}
+
+      - name: Copy binary (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          cp openzl/cachedObjs/*/zli @openzl-cli/build/binaries/${{ matrix.platform }}/zli
+          chmod +x @openzl-cli/build/binaries/${{ matrix.platform }}/zli
+
+      - name: Copy binary (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          copy openzl\cachedObjs\*\zli.exe @openzl-cli\build\binaries\${{ matrix.platform }}\zli.exe
+
+      - name: Test binary
+        run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            @openzl-cli\build\binaries\${{ matrix.platform }}\zli.exe --version
+          else
+            @openzl-cli/build/binaries/${{ matrix.platform }}/zli --version
+          fi
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: zli-${{ matrix.platform }}
+          path: @openzl-cli/build/binaries/${{ matrix.platform }}/
+          retention-days: 30
+
+  package-and-publish:
+    needs: build-binaries
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Download all binary artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./binaries
+
+      - name: Extract binaries to package
+        run: |
+          mkdir -p @openzl-cli/build/binaries
+          for dir in binaries/*/; do
+            platform=$(basename "$dir")
+            cp -r "$dir"/* @openzl-cli/build/binaries/
+          done
+
+      - name: Install package dependencies
+        run: |
+          cd @openzl-cli
+          npm install
+
+      - name: Test package
+        run: |
+          cd @openzl-cli
+          npm pack
+          npm install -g openzl-cli-*.tgz
+          zli --version
+
+      - name: Publish to npm
+        if: github.event_name == 'release'
+        run: |
+          cd @openzl-cli
+          npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

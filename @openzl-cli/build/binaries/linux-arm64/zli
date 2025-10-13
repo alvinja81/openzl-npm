@@ -1,0 +1,11 @@
+#!/bin/bash
+echo "Error: Binary not available for platform linux-arm64"
+echo "This is a placeholder. The actual binary needs to be built for this platform."
+echo "Current platform: darwin-arm64"
+echo "Requested platform: linux-arm64"
+echo ""
+echo "To get the real binary:"
+echo "1. Set up GitHub Actions CI/CD"
+echo "2. Or build manually on a Linux ARM64 machine"
+echo "3. Or use the fallback to gzip compression"
+exit 1

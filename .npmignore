@@ -1,0 +1,15 @@
+src/
+example/
+tsconfig.json
+.gitignore
+*.log
+.DS_Store
+node_modules/
+.env
+*.tsbuildinfo
+coverage/
+.vscode/
+.idea/
+
+
+
