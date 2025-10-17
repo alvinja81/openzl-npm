@@ -8,6 +8,7 @@ on:
 
 jobs:
   build:
+    timeout-minutes: 30
     strategy:
       matrix:
         include:
@@ -43,12 +44,17 @@ jobs:
       - name: Install build dependencies (Windows)
         if: runner.os == 'Windows'
         run: |
-          choco install cmake
+          choco install cmake --yes
 
       - name: Build OpenZL CLI
         run: |
           cd openzl
-          make zli BUILD_TYPE=OPT
+          ls -la
+          make --version
+          # Build dependencies first
+          make deps
+          # Then build zli
+          make zli
           
       - name: Create binary directory
         run: |

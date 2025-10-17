@@ -49,7 +49,10 @@ jobs:
       - name: Build OpenZL CLI
         run: |
           cd openzl
-          make zli BUILD_TYPE=OPT
+          # Build dependencies first
+          make deps
+          # Then build zli
+          make zli
           
       - name: Create binary directory
         run: |
