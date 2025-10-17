@@ -99,7 +99,7 @@ jobs:
         run: |
           cd @openzl-cli
           npm pack
-          npm install -g openzl-cli-*.tgz
+          npm install -g amirja811-openzl-cli-*.tgz
           zli --version
 
       - name: Publish to npm
