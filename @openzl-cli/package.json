@@ -1,5 +1,5 @@
 {
-  "name": "openzl-cli",
+  "name": "@amirja811/openzl-cli",
   "version": "0.1.0",
   "description": "OpenZL CLI - High-performance compression tool",
   "main": "index.js",

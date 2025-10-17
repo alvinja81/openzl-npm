@@ -197,13 +197,14 @@ MIT
 ## 🔗 Related Projects
 
 - [OpenZL](https://github.com/openzl/openzl) - The OpenZL compression library
-- [@openzl/cli](https://github.com/openzl/cli) - OpenZL CLI tool
+- [@amirja811/openzl-cli](https://www.npmjs.com/package/@amirja811/openzl-cli) - OpenZL CLI tool
+- [openzl-express](https://www.npmjs.com/package/openzl-express) - Express middleware for OpenZL
 
 ## 💬 Support
 
-- 🐛 [Report a bug](https://github.com/yourusername/openzl-express/issues)
-- 💡 [Request a feature](https://github.com/yourusername/openzl-express/issues)
-- 📖 [Read the docs](https://github.com/openzl/openzl)
+- 🐛 [Report a bug](https://github.com/alvinja81/openzl-npm/issues)
+- 💡 [Request a feature](https://github.com/alvinja81/openzl-npm/issues)
+- 📖 [Read the docs](https://github.com/facebook/openzl)
 
 ---
 

@@ -1,0 +1,19 @@
+{
+  "name": "openzl-client-example",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "OpenZL client decompression example",
+  "main": "client-decompression.js",
+  "scripts": {
+    "test-client": "node client-decompression.js",
+    "start": "node client-decompression.js"
+  },
+  "dependencies": {
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {},
+  "keywords": ["openzl", "compression", "client", "decompression"],
+  "author": "OpenZL Team",
+  "license": "MIT"
+}
+

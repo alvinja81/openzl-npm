@@ -4,6 +4,25 @@ import { openzlMiddleware } from '../dist/index.js';
 const app = express();
 const PORT = 3000;
 
+// Test endpoint without compression (for Postman testing) - BEFORE middleware
+app.get('/api/large-raw', (req, res) => {
+  const users = Array.from({ length: 10000 }, (_, i) => ({
+    id: i + 1,
+    name: `user_${i + 1}`,
+    email: `user${i + 1}@example.com`,
+    age: Math.floor(Math.random() * 80) + 18,
+    city: ['New York', 'London', 'Tokyo', 'Paris', 'Berlin'][i % 5],
+    active: i % 2 === 0,
+    createdAt: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString()
+  }));
+
+  // Send uncompressed JSON for testing
+  res.json({
+    total: users,
+    note: "This is uncompressed data for testing purposes"
+  });
+});
+
 // Apply OpenZL middleware globally
 app.use(openzlMiddleware({
   enabled: true,
@@ -41,8 +60,7 @@ app.get('/api/large', (req, res) => {
   }));
 
   res.json({
-    total: users.length,
-    users
+    total: users
   });
 });
 
@@ -83,8 +101,10 @@ app.listen(PORT, () => {
   console.log('Test endpoints:');
   console.log(`  • http://localhost:${PORT}/`);
   console.log(`  • http://localhost:${PORT}/api/small (small response, won't compress)`);
-  console.log(`  • http://localhost:${PORT}/api/large (10k users, will compress)`);
+  console.log(`  • http://localhost:${PORT}/api/large (10k users, OpenZL compressed)`);
+  console.log(`  • http://localhost:${PORT}/api/large-raw (10k users, uncompressed for Postman)`);
   console.log(`  • http://localhost:${PORT}/api/nested (5k records, will compress)\n`);
-  console.log('💡 Check response headers to see compression stats!\n');
+  console.log('💡 Check response headers to see compression stats!');
+  console.log('📝 Use /api/large-raw in Postman to see readable JSON\n');
 });
 

@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenZL Browser Client Demo</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .endpoint-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        .endpoint-title {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+        button:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 OpenZL Browser Client Demo</h1>
+        
+        <div class="endpoint-section">
+            <div class="endpoint-title">📥 Test Uncompressed Endpoint</div>
+            <p>This endpoint returns regular JSON that browsers can read directly.</p>
+            <button onclick="testUncompressed()">Test /api/large-raw</button>
+            <div id="uncompressed-result" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="endpoint-section">
+            <div class="endpoint-title">🗜️ Test Compressed Endpoint (OpenZL)</div>
+            <p>This endpoint returns OpenZL compressed data. Browsers can't decompress it natively.</p>
+            <button onclick="testCompressed()">Test /api/large</button>
+            <div id="compressed-result" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="endpoint-section">
+            <div class="endpoint-title">📊 Compare Both Endpoints</div>
+            <p>Compare the size and performance differences between compressed and uncompressed data.</p>
+            <button onclick="compareEndpoints()">Compare Endpoints</button>
+            <div id="comparison-result" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="endpoint-section">
+            <div class="endpoint-title">💡 Real-World Usage Examples</div>
+            <div class="info">
+                <strong>When OpenZL is used:</strong><br>
+                • Server-to-server communication (microservices)<br>
+                • Mobile apps with custom SDKs<br>
+                • High-performance web apps with WASM decompression<br>
+                • Data pipelines and ETL processes<br><br>
+                
+                <strong>When OpenZL is NOT used:</strong><br>
+                • Regular web browsers (no native support)<br>
+                • Standard HTTP clients (Postman, curl, fetch)<br>
+                • Third-party integrations without OpenZL support<br><br>
+                
+                <strong>Solution for browsers:</strong><br>
+                • Use gzip/deflate for web clients<br>
+                • Implement WASM-based decompression<br>
+                • Use server-side decompression proxy<br>
+                • Provide both compressed and uncompressed endpoints
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000';
+
+        async function testUncompressed() {
+            const resultDiv = document.getElementById('uncompressed-result');
+            const button = event.target;
+            
+            button.disabled = true;
+            button.innerHTML = '<span class="loading"></span> Loading...';
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result info';
+            resultDiv.textContent = 'Fetching uncompressed data...';
+
+            try {
+                const startTime = Date.now();
+                const response = await fetch(`${API_BASE}/api/large-raw`);
+                const data = await response.json();
+                const endTime = Date.now();
+
+                const responseSize = JSON.stringify(data).length;
+                const userCount = data.total.length;
+
+                resultDiv.className = 'result success';
+                resultDiv.textContent = `✅ Success!
+📊 Response Stats:
+   • Users: ${userCount}
+   • Response Size: ${responseSize.toLocaleString()} bytes
+   • Load Time: ${endTime - startTime}ms
+   • Content-Type: ${response.headers.get('content-type')}
+
+📝 Sample Data:
+${JSON.stringify(data, null, 2).substring(0, 500)}...`;
+
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ Error: ${error.message}`;
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Test /api/large-raw';
+            }
+        }
+
+        async function testCompressed() {
+            const resultDiv = document.getElementById('compressed-result');
+            const button = event.target;
+            
+            button.disabled = true;
+            button.innerHTML = '<span class="loading"></span> Loading...';
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result info';
+            resultDiv.textContent = 'Fetching compressed data...';
+
+            try {
+                const startTime = Date.now();
+                const response = await fetch(`${API_BASE}/api/large`);
+                const endTime = Date.now();
+
+                // Get compression headers
+                const compressionRatio = response.headers.get('X-OpenZL-Ratio');
+                const originalSize = response.headers.get('X-Original-Size');
+                const compressedSize = response.headers.get('X-Compressed-Size');
+                const contentEncoding = response.headers.get('Content-Encoding');
+
+                // Try to read as text (will show binary data)
+                const responseText = await response.text();
+
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ Browser Cannot Decompress OpenZL
+
+📊 Compression Stats:
+   • Original Size: ${originalSize ? parseInt(originalSize).toLocaleString() : 'N/A'} bytes
+   • Compressed Size: ${compressedSize ? parseInt(compressedSize).toLocaleString() : 'N/A'} bytes
+   • Compression Ratio: ${compressionRatio || 'N/A'}
+   • Content-Encoding: ${contentEncoding || 'N/A'}
+   • Load Time: ${endTime - startTime}ms
+
+🔍 Raw Response (first 200 chars):
+${responseText.substring(0, 200)}...
+
+💡 This is why browsers need special handling for OpenZL!`;
+
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ Error: ${error.message}`;
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Test /api/large';
+            }
+        }
+
+        async function compareEndpoints() {
+            const resultDiv = document.getElementById('comparison-result');
+            const button = event.target;
+            
+            button.disabled = true;
+            button.innerHTML = '<span class="loading"></span> Comparing...';
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result info';
+            resultDiv.textContent = 'Comparing both endpoints...';
+
+            try {
+                // Test uncompressed
+                const start1 = Date.now();
+                const uncompressedResponse = await fetch(`${API_BASE}/api/large-raw`);
+                const uncompressedData = await uncompressedResponse.json();
+                const uncompressedTime = Date.now() - start1;
+                const uncompressedSize = JSON.stringify(uncompressedData).length;
+
+                // Test compressed
+                const start2 = Date.now();
+                const compressedResponse = await fetch(`${API_BASE}/api/large`);
+                const compressedTime = Date.now() - start2;
+                
+                const compressionRatio = compressedResponse.headers.get('X-OpenZL-Ratio');
+                const originalSize = compressedResponse.headers.get('X-Original-Size');
+                const compressedSize = compressedResponse.headers.get('X-Compressed-Size');
+
+                const bandwidthSaved = parseInt(originalSize) - parseInt(compressedSize);
+                const bandwidthSavedPercent = ((bandwidthSaved / parseInt(originalSize)) * 100).toFixed(2);
+
+                resultDiv.className = 'result success';
+                resultDiv.textContent = `📊 Comparison Results:
+
+🔓 Uncompressed (/api/large-raw):
+   • Size: ${uncompressedSize.toLocaleString()} bytes
+   • Load Time: ${uncompressedTime}ms
+   • Browser Support: ✅ Native JSON parsing
+
+🗜️ Compressed (/api/large):
+   • Original Size: ${parseInt(originalSize).toLocaleString()} bytes
+   • Compressed Size: ${parseInt(compressedSize).toLocaleString()} bytes
+   • Load Time: ${compressedTime}ms
+   • Compression Ratio: ${compressionRatio}
+   • Browser Support: ❌ Needs special handling
+
+💾 Bandwidth Savings:
+   • Bytes Saved: ${bandwidthSaved.toLocaleString()} bytes
+   • Percentage Saved: ${bandwidthSavedPercent}%
+   • Speed Difference: ${Math.abs(uncompressedTime - compressedTime)}ms
+
+🎯 Conclusion:
+OpenZL provides excellent compression (${bandwidthSavedPercent}% savings) but requires
+custom client-side decompression for browser compatibility.`;
+
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ Comparison failed: ${error.message}`;
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Compare Endpoints';
+            }
+        }
+    </script>
+</body>
+</html>
+
