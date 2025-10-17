@@ -13,18 +13,6 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-latest
-            platform: linux-x64
-            arch: x64
-          - os: ubuntu-latest
-            platform: linux-arm64
-            arch: arm64
-          - os: windows-latest
-            platform: win32-x64
-            arch: x64
-          - os: macos-latest
-            platform: darwin-x64
-            arch: x64
           - os: macos-latest
             platform: darwin-arm64
             arch: arm64
@@ -34,8 +22,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
+
+      - name: Clone OpenZL repository
+        run: |
+          git clone https://github.com/facebook/openzl.git openzl
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -56,24 +46,14 @@ jobs:
         run: |
           mkdir -p @openzl-cli/build/binaries/${{ matrix.platform }}
 
-      - name: Copy binary (Unix)
-        if: runner.os != 'Windows'
+      - name: Copy binary
         run: |
           cp openzl/cachedObjs/*/zli @openzl-cli/build/binaries/${{ matrix.platform }}/zli
           chmod +x @openzl-cli/build/binaries/${{ matrix.platform }}/zli
 
-      - name: Copy binary (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          copy openzl\cachedObjs\*\zli.exe @openzl-cli\build\binaries\${{ matrix.platform }}\zli.exe
-
       - name: Test binary
         run: |
-          if [ "${{ runner.os }}" = "Windows" ]; then
-            @openzl-cli\build\binaries\${{ matrix.platform }}\zli.exe --version
-          else
-            @openzl-cli/build/binaries/${{ matrix.platform }}/zli --version
-          fi
+          @openzl-cli/build/binaries/${{ matrix.platform }}/zli --version
 
       - name: Upload binary artifact
         uses: actions/upload-artifact@v4
@@ -106,7 +86,8 @@ jobs:
           mkdir -p @openzl-cli/build/binaries
           for dir in binaries/*/; do
             platform=$(basename "$dir")
-            cp -r "$dir"/* @openzl-cli/build/binaries/
+            mkdir -p @openzl-cli/build/binaries/$platform
+            cp -r "$dir"/* @openzl-cli/build/binaries/$platform/
           done
 
       - name: Install package dependencies
