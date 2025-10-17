@@ -51,9 +51,7 @@ jobs:
           cd openzl
           ls -la
           make --version
-          # Build dependencies first
-          make deps
-          # Then build zli
+          # Build zli directly (dependencies are already built)
           make zli
           
       - name: Create binary directory

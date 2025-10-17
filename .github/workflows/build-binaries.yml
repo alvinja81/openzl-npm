@@ -49,9 +49,7 @@ jobs:
       - name: Build OpenZL CLI
         run: |
           cd openzl
-          # Build dependencies first
-          make deps
-          # Then build zli
+          # Build zli directly (dependencies are already built)
           make zli
           
       - name: Create binary directory
@@ -81,7 +79,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: zli-${{ matrix.platform }}
-          path: @openzl-cli/build/binaries/${{ matrix.platform }}/
+          path: "@openzl-cli/build/binaries/${{ matrix.platform }}/"
           retention-days: 30
 
   package-and-publish:

@@ -37,7 +37,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/openzl/openzl.git"
+    "url": "https://github.com/alvinja81/openzl-npm.git"
   },
   "engines": {
     "node": ">=18.0.0"

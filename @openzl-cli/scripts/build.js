@@ -39,8 +39,8 @@ function buildOpenZL() {
     // Change to OpenZL directory and build
     process.chdir(OPENZL_DIR);
     
-    console.log('Running make zli BUILD_TYPE=OPT...');
-    execSync('make zli BUILD_TYPE=OPT', { stdio: 'inherit' });
+    console.log('Running make zli...');
+    execSync('make zli', { stdio: 'inherit' });
     
     // Find the built binary
     const findResult = execSync('find . -name "zli" -type f', { encoding: 'utf8' });

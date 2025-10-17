@@ -125,6 +125,7 @@ MIT
 
 ## Links
 
-- [OpenZL Repository](https://github.com/openzl/openzl)
-- [@openzl/express](https://www.npmjs.com/package/@openzl/express)
-- [Documentation](https://github.com/openzl/openzl/blob/main/README.md)
+- [OpenZL Repository](https://github.com/facebook/openzl)
+- [@amirja811/openzl-cli](https://www.npmjs.com/package/@amirja811/openzl-cli)
+- [openzl-express](https://www.npmjs.com/package/openzl-express)
+- [Documentation](https://github.com/facebook/openzl/blob/main/README.md)
