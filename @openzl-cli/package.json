@@ -1,22 +1,14 @@
 {
   "name": "@amirja811/openzl-cli",
-  "version": "0.1.0",
-  "description": "OpenZL CLI - High-performance compression tool",
-  "main": "index.js",
+  "version": "0.2.0",
+  "description": "OpenZL CLI (zli) - prebuilt binaries for Meta's OpenZL compression tool",
   "bin": {
     "zli": "./bin/zli"
-  },
-  "optionalDependencies": {
-    "@openzl/cli-darwin-arm64": "file:./build/binaries/darwin-arm64",
-    "@openzl/cli-darwin-x64": "file:./build/binaries/darwin-x64",
-    "@openzl/cli-linux-arm64": "file:./build/binaries/linux-arm64",
-    "@openzl/cli-linux-x64": "file:./build/binaries/linux-x64",
-    "@openzl/cli-win32-x64": "file:./build/binaries/win32-x64"
   },
   "scripts": {
     "build": "node scripts/build.js",
     "postinstall": "node scripts/postinstall.js",
-    "test": "zli --version"
+    "test": "node bin/zli --version"
   },
   "files": [
     "bin",
@@ -24,8 +16,6 @@
     "scripts/postinstall.js",
     "README.md"
   ],
-  "os": ["darwin", "linux", "win32"],
-  "cpu": ["x64", "arm64"],
   "keywords": [
     "openzl",
     "compression",
@@ -33,12 +23,16 @@
     "zli",
     "binary"
   ],
-  "author": "OpenZL Team",
+  "author": "Amir Jahanshahi",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/alvinja81/openzl-npm.git"
+    "url": "git+https://github.com/alvinja81/openzl-npm.git"
   },
+  "bugs": {
+    "url": "https://github.com/alvinja81/openzl-npm/issues"
+  },
+  "homepage": "https://github.com/alvinja81/openzl-npm#readme",
   "engines": {
     "node": ">=18.0.0"
   }

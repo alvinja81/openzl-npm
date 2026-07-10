@@ -11,49 +11,46 @@ on:
 jobs:
   build-binaries:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: macos-latest
             platform: darwin-arm64
-            arch: arm64
+          - os: macos-13
+            platform: darwin-x64
+          - os: ubuntu-latest
+            platform: linux-x64
+          - os: ubuntu-24.04-arm
+            platform: linux-arm64
 
     runs-on: ${{ matrix.os }}
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Clone OpenZL repository
-        run: |
-          git clone https://github.com/facebook/openzl.git openzl
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm install
+        run: git clone --depth 1 https://github.com/facebook/openzl.git openzl
 
       - name: Build OpenZL CLI
         run: |
           cd openzl
-          # Build zli directly (dependencies are already built)
           make zli
-          
-      - name: Create binary directory
-        run: |
-          mkdir -p @openzl-cli/build/binaries/${{ matrix.platform }}
 
       - name: Copy binary
         run: |
-          cp openzl/cachedObjs/*/zli @openzl-cli/build/binaries/${{ matrix.platform }}/zli
-          chmod +x @openzl-cli/build/binaries/${{ matrix.platform }}/zli
+          mkdir -p "@openzl-cli/build/binaries/${{ matrix.platform }}"
+          zli_path=$(find openzl -type f -name zli -perm -111 | head -1)
+          if [ -z "$zli_path" ]; then
+            echo "zli binary not found after build" >&2
+            exit 1
+          fi
+          cp "$zli_path" "@openzl-cli/build/binaries/${{ matrix.platform }}/zli"
+          chmod +x "@openzl-cli/build/binaries/${{ matrix.platform }}/zli"
 
       - name: Test binary
         run: |
-          @openzl-cli/build/binaries/${{ matrix.platform }}/zli --version
+          "@openzl-cli/build/binaries/${{ matrix.platform }}/zli" --version
 
       - name: Upload binary artifact
         uses: actions/upload-artifact@v4
@@ -65,7 +62,7 @@ jobs:
   package-and-publish:
     needs: build-binaries
     runs-on: macos-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -74,7 +71,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Download all binary artifacts
         uses: actions/download-artifact@v4
@@ -84,16 +81,14 @@ jobs:
       - name: Extract binaries to package
         run: |
           mkdir -p @openzl-cli/build/binaries
-          for dir in binaries/*/; do
+          for dir in binaries/zli-*/; do
             platform=$(basename "$dir")
-            mkdir -p @openzl-cli/build/binaries/$platform
-            cp -r "$dir"/* @openzl-cli/build/binaries/$platform/
+            platform=${platform#zli-}
+            mkdir -p "@openzl-cli/build/binaries/$platform"
+            cp -r "$dir"/* "@openzl-cli/build/binaries/$platform/"
+            chmod +x "@openzl-cli/build/binaries/$platform/zli" || true
           done
-
-      - name: Install package dependencies
-        run: |
-          cd @openzl-cli
-          npm install
+          ls -laR @openzl-cli/build/binaries
 
       - name: Test package
         run: |

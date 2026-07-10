@@ -1,214 +1,149 @@
-# @openzl/express
+# openzl-express
 
-Express middleware for compressing JSON responses using OpenZL - the next-generation compression algorithm.
+Express middleware that compresses JSON responses with [OpenZL](https://github.com/facebook/openzl) (Meta's format-aware compression framework) for clients that opt in — and standard **gzip for everyone else**.
 
-## 🚀 Features
+## How it works
 
-- ✅ **Automatic OpenZL Compression** - Compress JSON responses with superior compression ratios
-- ✅ **Smart Fallback** - Automatically falls back to gzip if OpenZL is unavailable
-- ✅ **Zero Config** - Works out of the box with sensible defaults
-- ✅ **TypeScript Support** - Full type definitions included
-- ✅ **Compression Metrics** - Track compression ratios via response headers
-- ✅ **Configurable** - Customize threshold, fallback behavior, and more
-- ✅ **Error Handling** - Graceful error handling with helpful messages
+The middleware negotiates compression from the client's `Accept-Encoding` header:
 
-## 📦 Installation
+| Client sends | Response |
+|---|---|
+| `Accept-Encoding: openzl` | OpenZL-compressed (`Content-Encoding: openzl`) |
+| `Accept-Encoding: gzip` (browsers, curl, axios — the default) | gzip-compressed |
+| Neither | Uncompressed JSON |
 
-```bash
-npm install @openzl/express
-```
+Browsers and normal HTTP clients never receive OpenZL data by accident — they get gzip, which they decode transparently. Only clients that explicitly send `Accept-Encoding: openzl` (and know how to decode it) get OpenZL.
 
-### Prerequisites
+If the OpenZL CLI is missing or fails, the middleware automatically falls back to gzip.
 
-You also need to install the OpenZL CLI (`zli`):
+## Installation
 
 ```bash
-npm install -g @openzl/cli
+npm install openzl-express
 ```
 
-Or follow the [official OpenZL installation guide](https://github.com/openzl/openzl).
+This pulls in [`@amirja811/openzl-cli`](https://www.npmjs.com/package/@amirja811/openzl-cli) as an optional dependency, which provides the `zli` binary.
 
-## 🔧 Usage
+> **Platform support:** prebuilt `zli` binaries are currently available for **macOS (Apple Silicon)** and **Linux (x64/arm64)** where CI has built them. On other platforms the middleware still works — it serves gzip. You can also [build `zli` from source](https://github.com/facebook/openzl).
 
-### Basic Setup
+## Usage
+
+### Basic setup
 
 ```typescript
 import express from 'express';
-import { openzlMiddleware } from '@openzl/express';
+import { openzlMiddleware } from 'openzl-express';
 
 const app = express();
-
-// Apply OpenZL middleware globally
 app.use(openzlMiddleware());
 
 app.get('/api/data', (req, res) => {
-  res.json({ 
-    message: 'This response will be compressed with OpenZL!',
-    data: [/* large dataset */]
-  });
+  res.json({ data: [/* large dataset */] });
 });
 
 app.listen(3000);
 ```
 
-### With Configuration
+### With configuration
 
 ```typescript
 app.use(openzlMiddleware({
-  enabled: true,              // Enable/disable compression (default: true)
-  threshold: 1024,            // Min size in bytes to compress (default: 1024)
-  fallbackToGzip: true,       // Fallback to gzip if OpenZL fails (default: true)
-  debug: false,               // Enable debug logging (default: false)
+  enabled: true,        // Enable/disable compression (default: true)
+  threshold: 1024,      // Min size in bytes to compress (default: 1024)
+  fallbackToGzip: true, // Fallback to gzip if OpenZL fails (default: true)
+  debug: false,         // Enable debug logging (default: false)
   onError: (err, req, res) => {
-    // Custom error handler
     console.error('Compression error:', err);
   }
 }));
 ```
 
-### Apply to Specific Routes
+### Consuming OpenZL responses from a Node.js client
 
 ```typescript
-const openzl = openzlMiddleware({ threshold: 2048 });
+import { decompressWithOpenZL } from 'openzl-express';
 
-// Only compress these routes
-app.get('/api/large-data', openzl, (req, res) => {
-  res.json({ /* large data */ });
+const res = await fetch('http://localhost:3000/api/data', {
+  headers: { 'Accept-Encoding': 'openzl' }
 });
 
-app.get('/api/reports', openzl, (req, res) => {
-  res.json({ /* report data */ });
-});
+let body = Buffer.from(await res.arrayBuffer());
+if (res.headers.get('content-encoding') === 'openzl') {
+  body = await decompressWithOpenZL(body);
+}
+const data = JSON.parse(body.toString('utf-8'));
 ```
 
-## 📊 Response Headers
+### Checking CLI availability
 
-When compression is successful, the following headers are added:
+```typescript
+import { checkCLIAvailable } from 'openzl-express';
+
+if (!(await checkCLIAvailable())) {
+  console.warn('OpenZL CLI not found — responses will use gzip');
+}
+```
+
+## Response headers
+
+OpenZL-compressed responses:
 
 ```
 Content-Encoding: openzl
+Content-Type: application/json; charset=utf-8
+Vary: Accept-Encoding
 X-OpenZL-Ratio: 23.45%
 X-Original-Size: 125000
 X-Compressed-Size: 29312
 ```
 
-When fallback to gzip occurs:
+Gzip fallback after an OpenZL failure additionally carries:
 
 ```
-Content-Encoding: gzip
 X-Compression-Fallback: gzip
 X-OpenZL-Error: OpenZLCLINotFoundError
 ```
 
-## 🎯 How It Works
-
-1. **Intercepts `res.json()`** - The middleware intercepts all JSON responses
-2. **Size Check** - Only compresses responses larger than the threshold (default 1KB)
-3. **OpenZL Compression** - Attempts to compress using the OpenZL CLI
-4. **Fallback** - If OpenZL fails, automatically falls back to gzip (if enabled)
-5. **Error Handling** - Logs errors and sends uncompressed response as last resort
-
-## 🔍 Troubleshooting
-
-### "OpenZL CLI (zli) not found" Error
-
-Make sure you have the OpenZL CLI installed:
-
-```bash
-npm install -g @openzl/cli
-# or
-zli --version  # Check if it's installed
-```
-
-### Compression Not Working
-
-1. **Check response size** - Responses must be larger than `threshold` (default 1KB)
-2. **Enable debug mode** - Set `debug: true` to see what's happening
-3. **Check headers** - Look for `X-OpenZL-Error` header to see why it failed
-
-### Performance Considerations
-
-- **CPU Usage** - OpenZL compression is CPU-intensive; consider the threshold setting
-- **Temp Files** - The middleware uses temp files; ensure your OS has sufficient disk space
-- **Async** - Compression is asynchronous and won't block the event loop
-
-## 📝 API Reference
+## API reference
 
 ### `openzlMiddleware(options?)`
-
-Creates an Express middleware for OpenZL compression.
-
-#### Options
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `enabled` | `boolean` | `true` | Enable or disable compression |
 | `threshold` | `number` | `1024` | Minimum response size in bytes to trigger compression |
-| `fallbackToGzip` | `boolean` | `true` | Enable fallback to gzip if OpenZL fails |
-| `onError` | `function` | `undefined` | Custom error handler: `(err, req, res) => void` |
+| `fallbackToGzip` | `boolean` | `true` | Fallback to gzip if OpenZL fails |
+| `onError` | `function` | `undefined` | Error handler: `(err, req, res) => void` |
 | `debug` | `boolean` | `false` | Enable debug logging |
 
-#### Returns
+### Other exports
 
-Express middleware function: `(req, res, next) => void`
+- `compressWithOpenZL(buffer)` / `decompressWithOpenZL(buffer)` — direct CLI access
+- `checkCLIAvailable()` — returns `Promise<boolean>`
+- `resetCLICache()` — clear the cached CLI location
+- `OpenZLCLINotFoundError`, `CompressionError` — error classes
 
-## 🧪 Testing
+## Performance notes
 
-Run the example server:
+- Compression shells out to the `zli` CLI via temp files (~10–50 ms per request for process spawn). For small/medium payloads gzip may be the better trade — tune `threshold` accordingly. Benchmark with **your** data before assuming a win.
+- The CLI location is detected once per process and cached.
+- Compression runs asynchronously and does not block the event loop.
 
-```bash
-npm install
-npm run test
-```
+## Troubleshooting
 
-Then test the endpoints:
+- **`X-OpenZL-Error` header present** — OpenZL failed; the response fell back to gzip. Enable `debug: true` to see why.
+- **No compression at all** — response below `threshold`, or client sent no usable `Accept-Encoding`.
+- **`zli: no OpenZL binary available for <platform>`** — no prebuilt binary for your OS/arch; build from [facebook/openzl](https://github.com/facebook/openzl) or rely on gzip.
 
-```bash
-# Small response (won't compress)
-curl -i http://localhost:3000/api/small
+## Related
 
-# Large response (will compress with OpenZL)
-curl -i http://localhost:3000/api/large
+- [OpenZL](https://github.com/facebook/openzl) — the compression framework (Meta)
+- [`@amirja811/openzl-cli`](https://www.npmjs.com/package/@amirja811/openzl-cli) — prebuilt `zli` binaries
 
-# Check compression headers
-curl -i http://localhost:3000/api/nested | grep -i "x-openzl"
-```
+## Disclaimer
 
-## 📈 Benchmarks
+This is an unofficial community package. It is not affiliated with or endorsed by Meta or the OpenZL project.
 
-Typical compression ratios with OpenZL vs other methods:
-
-| Data Type | Original | gzip | OpenZL | Improvement |
-|-----------|----------|------|--------|-------------|
-| JSON API (10k records) | 2.5 MB | 180 KB | 95 KB | **47% better** |
-| User list (5k users) | 850 KB | 68 KB | 32 KB | **53% better** |
-| Nested objects | 1.2 MB | 95 KB | 48 KB | **49% better** |
-
-*Results may vary based on data structure and content*
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## 📄 License
+## License
 
 MIT
-
-## 🔗 Related Projects
-
-- [OpenZL](https://github.com/openzl/openzl) - The OpenZL compression library
-- [@amirja811/openzl-cli](https://www.npmjs.com/package/@amirja811/openzl-cli) - OpenZL CLI tool
-- [openzl-express](https://www.npmjs.com/package/openzl-express) - Express middleware for OpenZL
-
-## 💬 Support
-
-- 🐛 [Report a bug](https://github.com/alvinja81/openzl-npm/issues)
-- 💡 [Request a feature](https://github.com/alvinja81/openzl-npm/issues)
-- 📖 [Read the docs](https://github.com/facebook/openzl)
-
----
-
-Made with ❤️ for the Express + OpenZL community
-
-
-

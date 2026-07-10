@@ -1,131 +1,46 @@
-# @openzl/cli
+# @amirja811/openzl-cli
 
-OpenZL CLI - High-performance compression tool for Node.js applications.
+Prebuilt binaries for `zli`, the CLI of [OpenZL](https://github.com/facebook/openzl) — Meta's format-aware compression framework.
 
 ## Installation
 
-### Global Installation (Recommended)
-
 ```bash
-npm install -g @openzl/cli
+npm install -g @amirja811/openzl-cli
 ```
 
-**That's it!** The package automatically detects your platform and installs the correct binary.
-
-### Local Installation
+or as a project dependency:
 
 ```bash
-npm install @openzl/cli
+npm install @amirja811/openzl-cli
 ```
-
-### Platform Support
-
-- ✅ **macOS** (ARM64, x64) - Fully tested
-- ✅ **Linux** (x64, ARM64) - Built via CI/CD
-- ✅ **Windows** (x64) - Built via CI/CD
-
-**No build tools required!** The package includes pre-built binaries for all supported platforms.
 
 ## Usage
 
-After installation, you can use the `zli` command:
-
 ```bash
-# Check version
 zli --version
-
-# Compress a file
-zli compress input.json output.zl
-
-# Decompress a file
-zli decompress input.zl output.json
-
-# List available compression profiles
-zli list-profiles
-
-# Inspect a compressed file
-zli inspect input.zl
+zli compress input.json -o output.zl -p serial
+zli decompress output.zl -o restored.json
 ```
 
-## Platform Support
+## Platform support
 
-This package provides pre-built binaries for:
+| Platform | Status |
+|---|---|
+| macOS arm64 (Apple Silicon) | ✅ bundled |
+| Linux x64 / arm64 | ✅ when built by CI (see releases) |
+| macOS x64 (Intel) | ❌ not bundled — build from source |
+| Windows | ❌ not bundled — build from source |
 
-- **macOS**: arm64, x64
-- **Linux**: arm64, x64  
-- **Windows**: x64
+On unsupported platforms, `zli` prints a clear error and exits with code 1. Installation itself never fails — the postinstall step only warns. To build from source, see [facebook/openzl](https://github.com/facebook/openzl).
 
-The appropriate binary is automatically selected during installation based on your platform.
+## How it works
 
-## Integration with @openzl/express
+`bin/zli` is a small Node.js launcher that picks the right binary for your `os.platform()`/`os.arch()` from `build/binaries/` and forwards all arguments to it. No compilation happens at install time.
 
-This CLI is designed to work seamlessly with the `@openzl/express` middleware:
+## Disclaimer
 
-```bash
-# Install both packages
-npm install @openzl/express @openzl/cli
-
-# The middleware will automatically find and use the CLI
-```
-
-## Development
-
-### Building from Source
-
-If you need to build the CLI from source:
-
-```bash
-# Clone the OpenZL repository
-git clone https://github.com/openzl/openzl.git
-cd openzl
-
-# Build the CLI
-make zli BUILD_TYPE=OPT
-
-# The binary will be created in the build directory
-```
-
-### Building for Multiple Platforms
-
-To build binaries for all supported platforms, you'll need to:
-
-1. Build on macOS for darwin-arm64 and darwin-x64
-2. Use GitHub Actions or similar CI to build for Linux platforms
-3. Use Windows CI to build for win32-x64
-
-## Troubleshooting
-
-### Binary Not Found
-
-If you get a "binary not found" error:
-
-1. Ensure you're using a supported platform
-2. Try reinstalling: `npm uninstall -g @openzl/cli && npm install -g @openzl/cli`
-3. Check that the binary is executable: `ls -la $(which zli)`
-
-### Permission Denied
-
-On Unix-like systems, ensure the binary is executable:
-
-```bash
-chmod +x $(which zli)
-```
-
-### Platform Not Supported
-
-If your platform isn't supported, you can:
-
-1. Build from source (see Development section)
-2. Use the gzip fallback in @openzl/express
-3. Request support for your platform
+This is an unofficial community package redistributing OpenZL builds. It is not affiliated with or endorsed by Meta or the OpenZL project.
 
 ## License
 
-MIT
-
-## Links
-
-- [OpenZL Repository](https://github.com/facebook/openzl)
-- [@amirja811/openzl-cli](https://www.npmjs.com/package/@amirja811/openzl-cli)
-- [openzl-express](https://www.npmjs.com/package/openzl-express)
-- [Documentation](https://github.com/facebook/openzl/blob/main/README.md)
+MIT (packaging). The bundled OpenZL binary is subject to the [OpenZL license](https://github.com/facebook/openzl/blob/main/LICENSE).

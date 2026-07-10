@@ -1,7 +1,7 @@
 {
   "name": "openzl-express",
-  "version": "0.1.0",
-  "description": "Express middleware for compressing JSON responses using OpenZL",
+  "version": "0.2.0",
+  "description": "Express middleware for compressing JSON responses using OpenZL, with automatic gzip fallback",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -21,15 +21,16 @@
     "middleware",
     "api",
     "json",
-    "performance"
+    "performance",
+    "gzip"
   ],
-  "author": "",
+  "author": "Amir Jahanshahi",
   "license": "MIT",
   "peerDependencies": {
     "express": "^4.0.0 || ^5.0.0"
   },
-  "dependencies": {
-    "openzl-cli": "^0.1.0"
+  "optionalDependencies": {
+    "@amirja811/openzl-cli": "^0.2.0"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",
@@ -44,7 +45,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/openzl-express.git"
-  }
+    "url": "git+https://github.com/alvinja81/openzl-npm.git"
+  },
+  "bugs": {
+    "url": "https://github.com/alvinja81/openzl-npm/issues"
+  },
+  "homepage": "https://github.com/alvinja81/openzl-npm#readme"
 }
-
