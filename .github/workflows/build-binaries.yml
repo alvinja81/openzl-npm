@@ -63,6 +63,18 @@ jobs:
     needs: build-binaries
     runs-on: macos-latest
 
+    # The NPM_TOKEN secret was created as an *environment* secret in a GitHub
+    # environment named "NPM_TOKEN". A job only sees an environment's secrets
+    # if it opts into that environment here; without this line
+    # secrets.NPM_TOKEN is empty and the fallback publish would fail.
+    environment: NPM_TOKEN
+
+    permissions:
+      contents: read
+      # Required to mint the OIDC token npm exchanges for a short-lived
+      # publish credential (trusted publishing) and to sign provenance.
+      id-token: write
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -70,8 +82,14 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
           registry-url: 'https://registry.npmjs.org'
+
+      # Node 22 ships npm 10.x; trusted publishing needs npm >= 11.5.1.
+      - name: Upgrade npm
+        run: |
+          npm install -g npm@^11
+          npm --version
 
       - name: Download all binary artifacts
         uses: actions/download-artifact@v4
@@ -97,10 +115,62 @@ jobs:
           npm install -g amirja811-openzl-cli-*.tgz
           zli --version
 
-      - name: Publish to npm
+      # Primary path: trusted publishing. No secret is used here on purpose --
+      # if NODE_AUTH_TOKEN is present npm prefers it and skips OIDC entirely.
+      - name: Publish to npm (trusted publishing)
+        id: publish_oidc
         if: github.event_name == 'release'
-        run: |
-          cd @openzl-cli
-          npm publish --access public
+        continue-on-error: true
+        working-directory: '@openzl-cli'
+        run: npm publish --access public --provenance
+
+      # Fallback path: granular access token, scoped to this package only.
+      # Runs only if OIDC publishing failed (trusted publisher not yet
+      # configured, npm OIDC outage, etc).
+      - name: Publish to npm (granular token fallback)
+        if: github.event_name == 'release' && steps.publish_oidc.outcome == 'failure'
+        working-directory: '@openzl-cli'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          name=$(node -p "require('./package.json').name")
+          version=$(node -p "require('./package.json').version")
+
+          # The OIDC step may have failed *after* the registry accepted the
+          # upload. Re-publishing would then hard-fail on EPUBLISHCONFLICT,
+          # so treat an already-present version as success.
+          if npm view "$name@$version" version >/dev/null 2>&1; then
+            echo "$name@$version already on registry; OIDC publish succeeded late. Nothing to do."
+            exit 0
+          fi
+
+          if [ -z "${NODE_AUTH_TOKEN:-}" ]; then
+            echo "Trusted publishing failed and no NPM_TOKEN secret is set." >&2
+            echo "Configure the trusted publisher on npmjs.com, or add a granular token." >&2
+            exit 1
+          fi
+
+          echo "::warning::Trusted publishing failed; falling back to NPM_TOKEN."
+          npm publish --access public --provenance
+
+      - name: Verify published version is live
+        if: github.event_name == 'release'
+        run: |
+          set -euo pipefail
+          name=$(node -p "require('./@openzl-cli/package.json').name")
+          version=$(node -p "require('./@openzl-cli/package.json').version")
+
+          # Registry reads can lag a fresh publish; retry before declaring failure.
+          for attempt in 1 2 3 4 5; do
+            if npm view "$name@$version" version; then
+              echo "$name@$version is live."
+              exit 0
+            fi
+            echo "Not visible yet (attempt $attempt); retrying..."
+            sleep 15
+          done
+
+          echo "$name@$version never appeared on the registry." >&2
+          exit 1

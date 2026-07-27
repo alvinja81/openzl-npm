@@ -58,10 +58,44 @@ app.use(openzlMiddleware({
 }));
 ```
 
+### Core API (framework-free)
+
+The compression engine and HTTP negotiation live outside Express. Use them from any Node server or client:
+
+```typescript
+import {
+  compress,
+  decompress,
+  compressGzip,
+  pickEncoding,
+  checkCLIAvailable
+} from 'openzl-express';
+
+// Content negotiation (same rules as the middleware)
+pickEncoding('openzl, gzip;q=0.8'); // 'openzl'
+pickEncoding('gzip');               // 'gzip'
+pickEncoding(undefined);            // 'identity'
+
+// Bytes in / bytes out (OpenZL via zli CLI today)
+const zl = await compress(Buffer.from(JSON.stringify(payload)));
+const raw = await decompress(zl);
+
+// Gzip helper (Node zlib) for fallbacks
+const gz = await compressGzip(Buffer.from('hello'));
+```
+
+Wire contract:
+
+| Role | Header |
+|------|--------|
+| Client opt-in | `Accept-Encoding: openzl` (add `gzip` as backup) |
+| Server OpenZL | `Content-Encoding: openzl` + `Vary: Accept-Encoding` |
+| Server fallback | `Content-Encoding: gzip` or uncompressed |
+
 ### Consuming OpenZL responses from a Node.js client
 
 ```typescript
-import { decompressWithOpenZL } from 'openzl-express';
+import { decompress } from 'openzl-express';
 
 const res = await fetch('http://localhost:3000/api/data', {
   headers: { 'Accept-Encoding': 'openzl' }
@@ -69,7 +103,7 @@ const res = await fetch('http://localhost:3000/api/data', {
 
 let body = Buffer.from(await res.arrayBuffer());
 if (res.headers.get('content-encoding') === 'openzl') {
-  body = await decompressWithOpenZL(body);
+  body = await decompress(body);
 }
 const data = JSON.parse(body.toString('utf-8'));
 ```
@@ -118,10 +152,15 @@ X-OpenZL-Error: OpenZLCLINotFoundError
 
 ### Other exports
 
-- `compressWithOpenZL(buffer)` / `decompressWithOpenZL(buffer)` — direct CLI access
-- `checkCLIAvailable()` — returns `Promise<boolean>`
-- `resetCLICache()` — clear the cached CLI location
-- `OpenZLCLINotFoundError`, `CompressionError` — error classes
+| Export | Description |
+|--------|-------------|
+| `compress` / `decompress` | OpenZL bytes (preferred) |
+| `compressWithOpenZL` / `decompressWithOpenZL` | Aliases of the above |
+| `compressGzip` / `decompressGzip` | Node zlib helpers |
+| `pickEncoding` / `parseAcceptEncoding` | Accept-Encoding negotiation |
+| `checkCLIAvailable()` | `Promise<boolean>` |
+| `resetCLICache()` | Clear cached `zli` path |
+| `OpenZLCLINotFoundError`, `CompressionError` | Error classes |
 
 ## Performance notes
 
