@@ -29,6 +29,8 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
     enabled = true,
     threshold = 1024,
     fallbackToGzip = true,
+    profile = 'serial',
+    selectProfile,
     onError,
     debug = false
   } = options;
@@ -91,8 +93,14 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
       const handleCompression = async () => {
         if (encoding === 'openzl') {
           try {
-            log(`Attempting OpenZL compression for ${originalSize} bytes`);
-            const compressedBuffer = await compress(originalBuffer);
+            const chosen =
+              selectProfile?.(req, body, originalSize) ?? profile ?? 'serial';
+            log(
+              `Attempting OpenZL compression for ${originalSize} bytes (profile=${chosen})`
+            );
+            const compressedBuffer = await compress(originalBuffer, {
+              profile: chosen
+            });
             const result: CompressionResult = {
               originalSize,
               compressedSize: compressedBuffer.length,
@@ -104,11 +112,12 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
             res.setHeader('Content-Type', 'application/json; charset=utf-8');
             res.setHeader('Content-Length', compressedBuffer.length.toString());
             res.setHeader('X-OpenZL-Ratio', `${result.ratio.toFixed(2)}%`);
+            res.setHeader('X-OpenZL-Profile', chosen);
             res.setHeader('X-Original-Size', originalSize.toString());
             res.setHeader('X-Compressed-Size', compressedBuffer.length.toString());
 
             log(
-              `OpenZL: ${originalSize} → ${compressedBuffer.length} bytes (${result.ratio.toFixed(2)}%)`
+              `OpenZL[${chosen}]: ${originalSize} → ${compressedBuffer.length} bytes (${result.ratio.toFixed(2)}%)`
             );
             res.end(compressedBuffer);
             return;

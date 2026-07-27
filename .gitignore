@@ -9,5 +9,16 @@ coverage/
 .vscode/
 .idea/
 
+# Native / OpenZL build trees (large; rebuild with npm run build:openzl / build:native)
+native/build/
+openzl/build/
+openzl/build-lib/
+openzl/cmakebuild/
+
+# Generated training samples (compressors *.zlc are shipped)
+profiles/samples/
+tmp-serial.zl
+tmp-trained.zl
+
 
 

@@ -13,6 +13,19 @@ export interface OpenZLMiddlewareOptions {
   /** Fallback to gzip if OpenZL fails (default: true) */
   fallbackToGzip?: boolean;
 
+  /**
+   * OpenZL profile: shipped name (`serial`, `timeseries`, `api-list`, …),
+   * a builtin CLI profile, or a path to a `.zlc` file.
+   * @default 'serial'
+   */
+  profile?: string;
+
+  /**
+   * Per-request profile selection. Wins over `profile` when it returns a name.
+   * Use for route- or content-shape-specific compressors.
+   */
+  selectProfile?: (req: Request, body: unknown, jsonBytes: number) => string | undefined;
+
   /** Custom error handler for compression failures */
   onError?: (error: Error, req: Request, res: Response) => void;
 

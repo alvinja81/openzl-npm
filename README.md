@@ -164,7 +164,11 @@ X-OpenZL-Error: OpenZLCLINotFoundError
 
 ## Performance notes
 
-- Compression shells out to the `zli` CLI via temp files (~10–50 ms per request for process spawn). For small/medium payloads gzip may be the better trade — tune `threshold` accordingly. Benchmark with **your** data before assuming a win.
+- **Encode path (fastest first):** native N-API addon (default `serial`) → worker pool → `zli` CLI pipes. With native built, encode p50 is ~0.1–0.4 ms for ~100KB (see `bench/results/baseline.md`). Without native, CLI path is ~2–4 ms.
+- **Profiles (Phase 3):** `compress(buf, { profile: 'timeseries' })` or middleware `{ profile: 'api-list' }` / `selectProfile`. Shipped trained compressors live in `profiles/` (`npm run train:profiles` to regenerate). Best wins on typed/numeric/binary; prose is often a wash — see `bench/results/phase3-profiles.md`.
+- Build native (optional): clone [facebook/openzl](https://github.com/facebook/openzl) into `./openzl`, then `npm run build:openzl && npm run build:native`. Disable with `OPENZL_NATIVE=0`.
+- Worker pool: `OPENZL_POOL_SIZE` (default `2`; `0` = one-shot). Call `shutdownOpenZL()` on server shutdown.
+- Tune `threshold` for tiny payloads; benchmark with **your** data.
 - The CLI location is detected once per process and cached.
 - Compression runs asynchronously and does not block the event loop.
 

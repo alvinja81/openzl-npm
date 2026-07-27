@@ -4,7 +4,7 @@
 >
 > **Not the goal:** beating zstd. zstd is the reference baseline we measure against, not the enemy. "Competitive and honest" is the bar.
 
-**Current position:** Phase 0 — not started.
+**Current position:** Phase 3 — done. Next: Phase 4 (WASM decoder) or Phase 5 (coverage parity).
 
 ---
 
@@ -16,25 +16,46 @@
 
 ## Phase 0 — Baseline truth
 
-**Status:** `[ ]`
+**Status:** `[x]`
 **Size:** ~1 session
 **Depends on:** nothing
+**Done:** 2026-07-27 — report at `bench/results/baseline.md` (JSON twin: `baseline.json`)
 
 Build a benchmark harness before changing any code. Without a baseline, every later phase is a vibe.
 
 ### Tasks
-- [ ] `bench/` harness with warmup, repeat runs, outlier handling
-- [ ] Corpus generators:
-  - [ ] A — repetitive API JSON (typical REST list endpoint)
-  - [ ] B — numeric time-series JSON (OpenZL's home turf)
-  - [ ] C — prose-heavy JSON (expect OpenZL to lose)
-  - [ ] D — compact JSON, short keys, few repeats
-  - [ ] E — size sweep: 1KB / 10KB / 100KB / 1MB / 10MB
-  - [ ] F — non-JSON binary, fixed-width records
-- [ ] Codec runners: gzip L1/L6/L9 · brotli L4/L11 · zstd L1/L3/L19 · openzl `serial`
-- [ ] Metrics: ratio, encode p50/p95/p99, decode p50/p99, CPU time, RSS delta
-- [ ] End-to-end HTTP: TTFB + total over simulated 3G / 50Mbps / LAN
-- [ ] Report table + crossover chart, committed to repo
+- [x] `bench/` harness with warmup, repeat runs, outlier handling
+- [x] Corpus generators:
+  - [x] A — repetitive API JSON (typical REST list endpoint)
+  - [x] B — numeric time-series JSON (OpenZL's home turf)
+  - [x] C — prose-heavy JSON (expect OpenZL to lose)
+  - [x] D — compact JSON, short keys, few repeats
+  - [x] E — size sweep: 1KB / 10KB / 100KB / 1MB (10MB via `npm run bench:full`)
+  - [x] F — non-JSON binary, fixed-width records
+- [x] Codec runners: gzip L1/L6/L9 · brotli L4/L11 · zstd L1/L3/L19 · openzl `serial`
+- [x] Metrics: ratio, encode p50/p95/p99, decode p50/p99, CPU time, RSS delta
+- [x] End-to-end HTTP: TTFB + total over simulated 3G / 50Mbps / LAN
+- [x] Report table + crossover chart, committed to repo
+
+### Phase 0 headline numbers (this machine)
+
+Encode p50 / ratio at ~100KB — **openzl serial vs zstd L3**:
+
+| Corpus | openzl enc p50 | zstd3 enc p50 | openzl ratio | zstd3 ratio |
+|--------|---------------:|--------------:|-------------:|------------:|
+| A api-list | ~30.6ms | ~0.10ms | 4.7% | 5.5% |
+| B timeseries | ~30.1ms | ~0.24ms | 27.0% | 25.8% |
+| C prose | ~28.5ms | ~0.08ms | 1.9% | 2.0% |
+| D compact | ~29.0ms | ~0.27ms | 31.5% | 32.3% |
+| F binary | ~29.1ms | ~0.34ms | 57.4% | 52.5% |
+
+**Finding:** ratio is competitive with zstd on serial; **latency is ~100–300× worse** because every request pays process spawn + temp files (~28–31ms floor). Phase 1 exists to kill that floor.
+
+```
+npm run bench          # default matrix (A–F, size sweep to 1MB)
+npm run bench:quick    # smoke (~10KB)
+npm run bench:full     # + 10MB size point
+```
 
 ### Learn
 Benchmark methodology that doesn't lie to you — why ratio is meaningless without naming the corpus, why p99 beats mean on a server, warmup effects, JIT noise.
@@ -50,71 +71,184 @@ A committed table stating exactly where the project stands today. Every later ph
 
 ## Phase 1 — Kill the spawn
 
-**Status:** `[ ]`
+**Status:** `[x]`
 **Size:** ~2-3 sessions
 **Depends on:** Phase 0 (need the baseline to prove the gain)
+**Done:** 2026-07-27 — report at `bench/results/baseline.md` (Phase 0 frozen at `bench/results/phase0-baseline.md`)
 
-Current encoder forks a whole process and does two temp-file roundtrips **per HTTP response** — `src/core/engine.ts:99-117`. That fixed ~10-30ms cost (estimate — measure in Phase 0) dwarfs the actual compression work.
+### What actually cost ~30ms
+
+Two stacked mistakes, not "compression is slow":
+
+1. **Node launcher tax** — `node_modules/.bin/zli` is a Node script that `spawnSync`s the real binary (~25ms of Node startup per request).
+2. **Temp-file I/O** — write input, read output on every call.
+
+The native binary alone is ~1–3ms. Phase 1 fixes both.
 
 ### Tasks
-- [ ] **1a** — pipe via stdin/stdout, drop temp files entirely
-- [ ] **1b** — persistent worker pool:
-  - [ ] N long-lived `zli` processes
-  - [ ] length-framed binary protocol over pipes
-  - [ ] round-robin dispatch
-  - [ ] health check + respawn on worker death
-  - [ ] graceful shutdown
-- [ ] Re-run Phase 0 benchmarks, record the delta
+- [x] **1a** — resolve *native* `zli` binary; pipe via `/dev/stdin` + `/dev/stdout` (temp files only on Windows)
+- [x] **1b** — persistent worker pool:
+  - [x] N long-lived Node workers (each job still one-shots native `zli` — CLI has no daemon mode)
+  - [x] length-framed binary protocol over pipes (`src/core/protocol.ts`)
+  - [x] free-list dispatch (better than pure RR under uneven load)
+  - [x] health check (ping) + respawn with backoff on worker death
+  - [x] graceful shutdown (`shutdownOpenZL()` + process signal hooks)
+- [x] Re-run Phase 0 benchmarks, record the delta
+
+### Implementation map
+
+| Module | Role |
+|--------|------|
+| `src/core/cli-path.ts` | Find native binary, never the Node launcher |
+| `src/core/pipe-runner.ts` | One-shot stdin/stdout (or temp files on win32) |
+| `src/core/protocol.ts` | Length-framed IPC |
+| `src/core/worker.ts` | Child process entry |
+| `src/core/pool.ts` | Pool + singleton (`OPENZL_POOL_SIZE`, default 2; `0` = one-shot) |
+| `src/core/engine.ts` | pool → one-shot pipe fallback |
+
+### Phase 0 → Phase 1 delta (encode p50, openzl serial)
+
+| Corpus | Phase 0 | Phase 1 | Speedup |
+|--------|--------:|--------:|--------:|
+| A api-list (~100KB) | 30.64ms | 3.29ms | **9.3×** |
+| B timeseries | 30.09ms | 3.84ms | **7.8×** |
+| C prose | 28.47ms | 3.46ms | **8.2×** |
+| D compact | 28.98ms | 3.98ms | **7.3×** |
+| E-1kb | 27.69ms | 2.37ms | **11.7×** |
+| E-1mb | 34.37ms | 9.65ms | **3.6×** |
+| F binary | 29.09ms | 3.85ms | **7.6×** |
+
+Ratio unchanged (still serial profile). Decode p50 dropped the same way (~28ms → ~2.5–3ms).
+
+**Remaining gap vs zstd L3:** ~3ms vs ~0.1–0.3ms — that is process spawn of the native binary per job. Phase 2 (in-process N-API) kills that floor.
 
 ### Learn
-Process lifecycle, framing protocols (why a pipe needs a length prefix), backpressure, pool saturation, recovering from a worker that dies mid-request.
+Process lifecycle, framing protocols (why a pipe needs a length prefix), backpressure, pool saturation, recovering from a worker that dies mid-request. Also: always measure the *real* binary path, not the npm bin shim.
 
 ### Reach
-~10-30ms → ~1-3ms. Biggest single number change in the project. Crossover point vs zstd drops by an order of magnitude.
+~30ms → ~3ms encode p50. **Hit.** Biggest single number change in the project so far.
 
 ---
 
 ## Phase 2 — Native bindings
 
-**Status:** `[ ]`
+**Status:** `[x]`
 **Size:** ~3-4 sessions — hardest phase, real C++
 **Depends on:** Phase 1
+**Done:** 2026-07-27 — report at `bench/results/baseline.md` (Phase 1 frozen at `bench/results/phase1-baseline.md`)
 
 ### Tasks
-- [ ] N-API addon wrapping `libopenzl` (`node-addon-api` + `cmake-js`)
-- [ ] Zero-copy `Buffer` in / `Buffer` out
-- [ ] Run on the libuv threadpool — must not block the event loop
-- [ ] Fallback chain: native addon → worker pool → CLI → gzip
-- [ ] Re-run benchmarks
+- [x] N-API addon wrapping `libopenzl` (`node-addon-api` + `cmake-js`)
+- [x] Zero-copy `Buffer` in (Persistent ref during async work) / fresh `Buffer` out
+- [x] Run on the libuv threadpool — `Napi::AsyncWorker` (does not block the event loop)
+- [x] Fallback chain: native addon → worker pool → CLI pipe → (gzip at middleware)
+- [x] Re-run benchmarks
+
+### Implementation map
+
+| Path | Role |
+|------|------|
+| `native/src/binding.cpp` | N-API: compress/decompress async + sync |
+| `native/CMakeLists.txt` | Links static `libopenzl.a` + zstd + lz4 |
+| `scripts/build-openzl.sh` | CMake-builds OpenZL library only |
+| `scripts/build-native.sh` | `cmake-js compile` of the addon |
+| `src/core/native.ts` | Optional loader (never throws on import) |
+| `src/core/engine.ts` | native → pool → CLI |
+
+```
+npm run build:openzl   # needs ./openzl clone of facebook/openzl
+npm run build:native   # → native/build/Release/openzl_native.node
+```
+
+Env: `OPENZL_NATIVE=0` forces CLI path (ignore addon).
+
+### Phase 1 → Phase 2 delta (encode p50, openzl serial)
+
+| Corpus | Phase 1 (CLI) | Phase 2 (native) | Speedup |
+|--------|--------------:|-----------------:|--------:|
+| A api-list (~100KB) | 3.29ms | **0.19ms** | **17×** |
+| B timeseries | 3.84ms | **0.26ms** | **15×** |
+| C prose | 3.46ms | **0.07ms** | **49×** |
+| D compact | 3.98ms | **0.41ms** | **10×** |
+| E-1kb | 2.37ms | **0.024ms** | **99×** |
+| E-1mb | 9.65ms | **1.12ms** | **8.6×** |
+| F binary | 3.85ms | **0.15ms** | **26×** |
+
+vs **zstd L3** on ~100KB: openzl is now in the **same latency class** (often within 2×, sometimes faster on decode-bound shapes). Ratio still serial-only — Phase 3 is the ratio story.
+
+**vs Phase 0 (spawn+temp):** ~30ms → ~0.2ms ≈ **150×** on corpus A.
+
+### Notes / caveats
+- Serial profile built in-process mirrors CLI intent (`ACE+LZ` + serial segmenter). Absolute ratios can differ slightly from the prebuilt `zli` binary if library versions diverge.
+- **Frame version skew:** frames produced by native (current OpenZL sources, format ≤27) may not decompress with an older prebuilt `zli`. CLI→native decompress works; keep encoder/decoder versions matched for wire traffic.
+- Addon is **optional** — without it, engine falls back to Phase 1 CLI path automatically.
+- Distribution of prebuilds is Phase 6; today local `npm run build:native` after cloning OpenZL.
 
 ### Learn
 N-API and node-addon-api, ABI stability across Node versions, the libuv threadpool, zero-copy buffer semantics, why "async addon" ≠ "fast addon".
 
 ### Reach
-~0.1-0.5ms. Same latency class as `zlib.gzip`. This is where "competitive" stops being aspirational.
+~0.1–0.5ms on typical JSON. **Hit.** Same latency class as zlib/zstd.
 
 ---
 
 ## Phase 3 — Trained profiles (the actual point)
 
-**Status:** `[ ]`
+**Status:** `[x]`
 **Size:** ~3-5 sessions — most interesting phase
 **Depends on:** Phase 0 (can run in parallel with 1 and 2)
-
-`src/core/engine.ts:105` hardcodes `-p serial`. Serial = opaque byte stream, generic entropy coding — it throws away the format-aware compression graph that is OpenZL's entire reason to exist.
+**Done:** 2026-07-27 — report at `bench/results/phase3-profiles.md`
 
 ### Tasks
-- [ ] Remove hardcoded `serial`, make profile configurable
-- [ ] Training pipeline: sample real payloads → derive compression graph → emit trained profile
-- [ ] Ship trained profiles as assets
-- [ ] Profile selection per route / per content shape
-- [ ] Benchmark trained vs serial across all six corpora
+- [x] Remove hardcoded `serial`, make profile configurable (`CompressOptions.profile`)
+- [x] Training pipeline: `npm run train:profiles` → sample corpora → `zli train` → `.zlc`
+- [x] Ship trained profiles as assets (`profiles/*.zlc` + `manifest.json`)
+- [x] Profile selection per route / per content shape (`middleware.selectProfile`, `suggestProfile`)
+- [x] Benchmark trained vs serial across corpora A–F
+
+### Implementation map
+
+| Path | Role |
+|------|------|
+| `src/core/profiles.ts` | Resolve manifest / builtin / `.zlc` path |
+| `src/core/pipe-runner.ts` | CLI `-p` and `-c` |
+| `src/core/engine.ts` | `compress(buf, { profile })` |
+| `src/middleware.ts` | `profile` + `selectProfile` + `X-OpenZL-Profile` |
+| `profiles/manifest.json` | Catalog of shipped compressors |
+| `scripts/train-profiles.mjs` | Regenerate `.zlc` assets |
+
+```
+npm run train:profiles
+compress(buf, { profile: 'timeseries' })
+openzlMiddleware({ profile: 'api-list' })
+openzlMiddleware({
+  selectProfile: (req) => req.path.startsWith('/metrics') ? 'timeseries' : 'serial'
+})
+```
+
+### Ratio findings (~100KB, trained via CLI)
+
+| Corpus | gzip6 | zstd3 | openzl serial | openzl trained | Train win |
+|--------|------:|------:|--------------:|---------------:|----------:|
+| A api-list | 6.0% | 5.5% | 9.0%* | **4.7%** (api-list) | large |
+| B timeseries | 26.3% | 25.8% | 25.6% | **23.8%** (timeseries) | ~7% |
+| C prose | 2.9% | 2.0% | 3.5% | **2.1%** (prose) | meaningful |
+| F binary records | 62.9% | 52.5% | 64.7% | **13.8%** (binary) | **huge** |
+
+\* serial on native path can differ from CLI serial when OpenZL versions diverge — train/ship with the encoder you deploy.
+
+**The asymmetry is the finding:** typed/binary + trained graph wins hard; generic prose/API often only ties or edges out. Position the library there.
+
+### Notes
+- Trained compressors currently compress via **CLI `-c`** (not native deserialize yet — version/bundle constraints). Default `serial` still uses native for latency.
+- Decompress is universal (frame embeds graph) — clients need a matching OpenZL decoder version, not the training profile name.
+- Re-train when sample shape drifts: `npm run train:profiles`.
 
 ### Learn
-What OpenZL actually **is**. Compression graphs, tokenization, transposition, field splitting — why a numeric column compresses far better once split from surrounding JSON syntax. Serial teaches nothing; this teaches everything.
+What OpenZL actually **is**. Compression graphs, ACE training, why fixed-width numeric columns crush serial entropy coding.
 
 ### Reach
-The ratio win. Expect real gains on numeric/typed corpora, ties or losses on prose. **That asymmetry is the finding** — and it's the honest README positioning line.
+**Hit.** Real ratio wins on timeseries + binary; honest ties/losses elsewhere.
 
 ---
 

@@ -26,7 +26,17 @@ export {
   compressWithOpenZL,
   decompressWithOpenZL,
   checkCLIAvailable,
-  resetCLICache
+  resetCLICache,
+  shutdownOpenZL,
+  getActiveBackend,
+  isNativeAvailable,
+  getNativeLoadError,
+  listProfiles,
+  resolveProfile,
+  suggestProfile,
+  getProfilesRoot
 } from './engine.js';
+
+export type { BackendKind, CompressOptions, ResolvedProfile } from './engine.js';
 
 export { compressGzip, decompressGzip } from './gzip.js';

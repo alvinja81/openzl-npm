@@ -6,12 +6,26 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "profiles/*.zlc",
+    "profiles/manifest.json",
+    "native/CMakeLists.txt",
+    "native/src",
+    "scripts/build-openzl.sh",
+    "scripts/build-native.sh",
+    "scripts/train-profiles.mjs"
   ],
   "scripts": {
     "build": "tsc",
+    "build:openzl": "bash scripts/build-openzl.sh",
+    "build:native": "bash scripts/build-native.sh",
+    "build:all": "npm run build && npm run build:native",
+    "train:profiles": "node scripts/train-profiles.mjs",
     "dev": "nodemon --exec ts-node src/index.ts",
     "test": "ts-node example/server.ts",
+    "bench": "npm run build && node --experimental-strip-types bench/run.ts",
+    "bench:quick": "npm run build && node --experimental-strip-types bench/run.ts --quick",
+    "bench:full": "npm run build && node --experimental-strip-types bench/run.ts --full",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
@@ -35,7 +49,9 @@
   "devDependencies": {
     "@types/express": "^4.17.21",
     "@types/node": "^20.11.5",
+    "cmake-js": "^7.4.0",
     "express": "^4.18.2",
+    "node-addon-api": "^8.9.0",
     "nodemon": "^3.0.3",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3"

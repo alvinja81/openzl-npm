@@ -25,9 +25,19 @@ export {
   parseAcceptEncoding,
   checkCLIAvailable,
   resetCLICache,
+  shutdownOpenZL,
+  getActiveBackend,
+  isNativeAvailable,
+  getNativeLoadError,
+  listProfiles,
+  resolveProfile,
+  suggestProfile,
+  getProfilesRoot,
   OpenZLCLINotFoundError,
   CompressionError
 } from './core/index.js';
+
+export type { BackendKind, CompressOptions, ResolvedProfile } from './core/index.js';
 
 // Backward-compatible aliases
 export {

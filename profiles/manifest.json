@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "description": "Shipped OpenZL compressors for openzl-express (Phase 3). Built with zli train from sample corpora.",
+  "default": "serial",
+  "profiles": {
+    "serial": {
+      "type": "builtin",
+      "profile": "serial",
+      "description": "Opaque byte stream (ACE+LZ). Safe default for any payload."
+    },
+    "timeseries": {
+      "type": "trained",
+      "file": "timeseries.zlc",
+      "baseProfile": "serial",
+      "description": "Trained on numeric time-series JSON (corpus B shape).",
+      "recommendedFor": ["numeric JSON", "sensor streams", "metrics APIs"]
+    },
+    "api-list": {
+      "type": "trained",
+      "file": "api-list.zlc",
+      "baseProfile": "serial",
+      "description": "Trained on repetitive REST list JSON (corpus A shape).",
+      "recommendedFor": ["list endpoints", "enum-heavy JSON"]
+    },
+    "prose": {
+      "type": "trained",
+      "file": "prose.zlc",
+      "baseProfile": "serial",
+      "description": "Trained on prose-heavy JSON (corpus C). Expect little gain vs serial.",
+      "recommendedFor": ["documents", "notes"]
+    },
+    "binary": {
+      "type": "trained",
+      "file": "binary.zlc",
+      "baseProfile": "serial",
+      "description": "Trained on fixed-width binary records (corpus F).",
+      "recommendedFor": ["fixed-width records", "binary blobs"]
+    },
+    "binary-le-u32": {
+      "type": "trained",
+      "file": "binary-le-u32.zlc",
+      "baseProfile": "le-u32",
+      "description": "Trained le-u32 profile on fixed-width binary (best ratio on typed binary).",
+      "recommendedFor": ["little-endian u32 arrays", "packed numeric records"]
+    }
+  }
+}
