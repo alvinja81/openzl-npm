@@ -8,7 +8,7 @@
 >
 > **Not the goal:** claiming “always better than zstd.” **The goal:** boring install, multi-codec negotiate, sharp wins on shaped data, opt-in clients only.
 
-**Current position:** Series 2 · **Phase 7 done** (multi-codec) · next Phase 9 (release) or 8 (core split) · package `0.3.0`
+**Current position:** Series 2 · **Phases 7–8 done** · next **Phase 9** (release hygiene) · package `0.4.0`
 
 **Status legend:** `[ ]` not started · `[~]` in progress · `[x]` done
 
@@ -131,9 +131,10 @@ Make **zstd a first-class peer** of gzip. Negotiation and middleware become a re
 
 ## Phase 8 — Package architecture (core vs Express)
 
-**Status:** `[ ]`  
+**Status:** `[x]`  
 **Size:** ~2 sessions  
-**Depends on:** Phase 7 (share multi-codec core)
+**Depends on:** Phase 7  
+**Done:** 2026-07-28 · `v0.4.0` subpath exports + Fastify adapter
 
 ### Goal
 
@@ -141,17 +142,31 @@ Stop being “an Express middleware package that happens to export core.” Beco
 
 ### Tasks
 
-- [ ] Split (monorepo or clear exports):
-  - [ ] `@scope/openzl-core` — negotiate, compress, profiles, native/CLI
-  - [ ] `openzl-express` — thin adapter only
-- [ ] Or interim: `exports` map `openzl-express/core` without full monorepo
-- [ ] Fastify plugin **or** Hono middleware (one second adapter proves the split)
-- [ ] Align package names for trust (optional later: move off personal scope for CLI)
-- [ ] Version core and express in lockstep for v0.4
+- [x] Subpath exports (single package, no monorepo yet):
+  - [x] `openzl-express/core` — negotiate, codecs, profiles, compressBody
+  - [x] `openzl-express/express` — Express middleware only
+  - [x] `openzl-express/fastify` — Fastify plugin (`fastify-plugin`, breaks encapsulation)
+- [x] Shared buffer compress helper (`adapters/shared.ts`) used by Fastify
+- [x] Root `openzl-express` remains full re-export (back-compat)
+- [x] Optional peers: `express` + `fastify` via `peerDependenciesMeta`
+- [x] Tests: Express + Fastify smoke
+- [ ] Future monorepo `@scope/openzl-core` publish (optional Phase 12 naming)
+
+### Layout
+
+```
+src/core/           framework-free
+src/adapters/express.ts
+src/adapters/fastify.ts
+src/adapters/shared.ts
+src/core-entry.ts   → openzl-express/core
+src/express.ts      → openzl-express/express
+src/fastify.ts      → openzl-express/fastify
+```
 
 ### Reach
 
-Not locked to Express; path to “Node HTTP compression kit.”
+**Hit.** Not locked to Express; Fastify proven. True multi-package monorepo can wait for broader ecosystem branding.
 
 ---
 

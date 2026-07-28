@@ -1,11 +1,13 @@
 /**
- * openzl-express public API
+ * openzl-express public API (root entry — back-compat).
  *
- * Core (framework-free) lives in `./core` and is re-exported here.
- * Express middleware is a thin adapter on top of core.
+ * Prefer subpath imports for new code:
+ * - `openzl-express/core`     — framework-free
+ * - `openzl-express/express`  — Express middleware
+ * - `openzl-express/fastify`  — Fastify plugin
  */
 
-export { openzlMiddleware } from './middleware.js';
+export { openzlMiddleware } from './adapters/express.js';
 
 export type {
   OpenZLMiddlewareOptions,
@@ -15,7 +17,6 @@ export type {
   PickEncodingOptions
 } from './types.js';
 
-// Core API — preferred names for new code
 export {
   compress,
   decompress,
@@ -44,8 +45,15 @@ export {
 
 export type { BackendKind, CompressOptions, ResolvedProfile } from './core/index.js';
 
-// Backward-compatible aliases
 export {
   compressWithOpenZL,
   decompressWithOpenZL
 } from './core/index.js';
+
+export { openzlFastify } from './adapters/fastify.js';
+export type { OpenZLFastifyOptions } from './adapters/fastify.js';
+
+export {
+  compressBody,
+  isCompressibleType
+} from './adapters/shared.js';

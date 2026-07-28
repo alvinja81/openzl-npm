@@ -63,9 +63,12 @@ Not for every page. Fine.
 
 ## Quick start
 
+### Express
+
 ```ts
 import express from 'express';
-import { openzlMiddleware } from 'openzl-express';
+import { openzlMiddleware } from 'openzl-express/express';
+// or: import { openzlMiddleware } from 'openzl-express';
 
 const app = express();
 app.use(openzlMiddleware({
@@ -73,7 +76,7 @@ app.use(openzlMiddleware({
   profile: 'serial',           // or 'timeseries' | 'api-list' | 'binary' | path.zlc
   // selectProfile: (req) => req.path.startsWith('/metrics') ? 'timeseries' : 'api-list',
   fallbackToGzip: true,
-  preferStreamGzip: true,      // sendFile streams gzip when client accepts both
+  preferStreamGzip: true,      // sendFile streams gzip/zstd when client accepts both
 }));
 
 app.get('/api/data', (req, res) => {
@@ -81,6 +84,24 @@ app.get('/api/data', (req, res) => {
 });
 
 app.listen(3000);
+```
+
+### Fastify
+
+```ts
+import Fastify from 'fastify';
+import { openzlFastify } from 'openzl-express/fastify';
+
+const app = Fastify();
+await app.register(openzlFastify, { threshold: 1024, profile: 'serial' });
+app.get('/api/data', async () => ({ data: [/* … */] }));
+await app.listen({ port: 3000 });
+```
+
+### Core only (no framework)
+
+```ts
+import { compress, pickEncoding, compressBody } from 'openzl-express/core';
 ```
 
 ### Negotiation
