@@ -29,3 +29,6 @@ tmp-trained.zl
 
 
 
+
+# Demo-trained compressor (regenerate with openzl-train)
+examples/flagship-metrics/trained-metrics.zlc

@@ -8,7 +8,7 @@
 >
 > **Not the goal:** claiming “always better than zstd.” **The goal:** boring install, multi-codec negotiate, sharp wins on shaped data, opt-in clients only.
 
-**Current position:** Series 2 · **Phases 7–12 done** (Phase 9 still needs **your** tag for prebuilds) · package `0.4.0`
+**Current position:** Series 2 complete · package `0.4.0` tagged · prebuilds via GitHub Release
 
 **Status legend:** `[ ]` not started · `[~]` in progress · `[x]` done
 
@@ -190,7 +190,7 @@ src/fastify.ts      → openzl-express/fastify
 - [x] `scripts/pack-smoke.mjs` — pack tarball + install in temp dir (`npm run pack:smoke`)
 - [x] CI: pack smoke + release-check on ubuntu/mac; Windows gzip import smoke
 - [x] Document install modes (ignore-scripts, OPENZL_SKIP_NATIVE, engines/zstd) in RELEASE.md + README
-- [ ] **Operator step:** create GitHub Release `v0.4.0` and confirm CI attaches CLI + native assets (cannot automate without your push/tag)
+- [x] **Operator step:** create GitHub Release `v0.4.0` and confirm CI attaches CLI + native assets
 
 ### Commands
 
