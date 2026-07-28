@@ -1,0 +1,169 @@
+name: Build native N-API prebuilds
+
+# N-API is ABI-stable — one .node per OS/arch covers Node 18+.
+# Artifacts attach to GitHub Releases for scripts/install-native.mjs.
+
+on:
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'native/**'
+      - 'scripts/build-native.sh'
+      - 'scripts/build-openzl.sh'
+      - '.github/workflows/build-native.yml'
+      - 'package.json'
+  pull_request:
+    paths:
+      - 'native/**'
+      - 'scripts/**'
+      - '.github/workflows/build-native.yml'
+  release:
+    types: [ published ]
+  workflow_dispatch:
+
+jobs:
+  build-native:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            platform: darwin-arm64
+          - os: macos-15-intel
+            platform: darwin-x64
+          - os: ubuntu-latest
+            platform: linux-x64
+          - os: ubuntu-24.04-arm
+            platform: linux-arm64
+          # Windows native is best-effort (OpenZL + cmake-js + MSVC)
+          - os: windows-latest
+            platform: win32-x64
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install system deps (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake ninja-build
+
+      - name: Install system deps (macOS)
+        if: runner.os == 'macOS'
+        run: brew install cmake ninja || true
+
+      - name: Setup MSVC (Windows)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Install npm deps
+        run: npm ci || npm install
+
+      - name: Clone OpenZL
+        run: |
+          if [ ! -f openzl/CMakeLists.txt ]; then
+            git clone --depth 1 https://github.com/facebook/openzl.git openzl
+          fi
+        shell: bash
+
+      - name: Build OpenZL static library
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S openzl -B openzl/build-lib \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DOPENZL_BUILD_TESTS=OFF \
+            -DOPENZL_BUILD_BENCHMARKS=OFF \
+            -DOPENZL_BUILD_CLI=OFF \
+            -DOPENZL_BUILD_EXAMPLES=OFF \
+            -DOPENZL_BUILD_PYTHON_EXT=OFF \
+            -DOPENZL_BUILD_TOOLS=OFF \
+            -DOPENZL_BUILD_CUSTOM_PARSERS=OFF \
+            -DOPENZL_BUILD_CPP=ON \
+            -DOPENZL_INSTALL=OFF \
+            -DOPENZL_ALLOW_INTROSPECTION=OFF
+          cmake --build openzl/build-lib --target openzl -j4
+
+      - name: Build N-API addon
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx cmake-js compile --directory native
+          # Normalize output location
+          NODE_BIN=$(find native/build -name 'openzl_native.node' -o -name 'openzl_native.dll' 2>/dev/null | head -1)
+          if [ -z "$NODE_BIN" ]; then
+            echo "addon not found" >&2
+            find native/build -type f | head -40
+            exit 1
+          fi
+          mkdir -p "prebuilds/${{ matrix.platform }}"
+          cp "$NODE_BIN" "prebuilds/${{ matrix.platform }}/openzl_native.node"
+          ls -la "prebuilds/${{ matrix.platform }}/"
+
+      - name: Smoke-test addon
+        shell: bash
+        run: |
+          node --input-type=module <<'EOF'
+          import { createRequire } from 'module';
+          import path from 'path';
+          const require = createRequire(import.meta.url);
+          const p = path.resolve('prebuilds', process.env.PLATFORM, 'openzl_native.node');
+          const m = require(p);
+          if (!m.isAvailable()) throw new Error('isAvailable false');
+          const buf = Buffer.from('hello openzl native prebuild '.repeat(20));
+          const out = m.compressSync(buf);
+          const back = m.decompressSync(out);
+          if (!back.equals(buf)) throw new Error('roundtrip fail');
+          console.log('ok', out.length);
+          EOF
+        env:
+          PLATFORM: ${{ matrix.platform }}
+
+      - name: Upload prebuild artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-${{ matrix.platform }}
+          path: prebuilds/${{ matrix.platform }}/
+          retention-days: 30
+
+  attach-release:
+    if: github.event_name == 'release'
+    needs: build-native
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download prebuilds
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Pack prebuild tarballs
+        run: |
+          set -euo pipefail
+          mkdir -p release-assets
+          version="${{ github.event.release.tag_name }}"
+          version="${version#v}"
+          for dir in artifacts/native-*/; do
+            platform=$(basename "$dir")
+            platform=${platform#native-}
+            name="openzl_native-v${version}-${platform}.tar.gz"
+            tar -czf "release-assets/$name" -C "$dir" .
+            echo "packed $name"
+          done
+          ls -la release-assets
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-assets/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -26,6 +26,20 @@ export interface OpenZLMiddlewareOptions {
    */
   selectProfile?: (req: Request, body: unknown, jsonBytes: number) => string | undefined;
 
+  /**
+   * Whether this response should be compressed (default: compressible types).
+   * Called after route handlers typically set Content-Type (on first write/end).
+   */
+  filter?: (req: Request, res: Response) => boolean;
+
+  /**
+   * When OpenZL is negotiated but the response is streamed (`write`/`sendFile`),
+   * prefer **gzip streaming** for TTFB if the client also accepts gzip.
+   * OpenZL still has no true stream encoder in this package.
+   * @default true
+   */
+  preferStreamGzip?: boolean;
+
   /** Custom error handler for compression failures */
   onError?: (error: Error, req: Request, res: Response) => void;
 

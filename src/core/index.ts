@@ -39,4 +39,4 @@ export {
 
 export type { BackendKind, CompressOptions, ResolvedProfile } from './engine.js';
 
-export { compressGzip, decompressGzip } from './gzip.js';
+export { compressGzip, decompressGzip, createGzipStream } from './gzip.js';

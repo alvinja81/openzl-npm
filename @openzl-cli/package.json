@@ -1,7 +1,7 @@
 {
   "name": "@amirja811/openzl-cli",
-  "version": "0.2.0",
-  "description": "OpenZL CLI (zli) - prebuilt binaries for Meta's OpenZL compression tool",
+  "version": "0.3.0",
+  "description": "OpenZL CLI (zli) — prebuilt binaries (macOS, Linux, Windows) for Meta's OpenZL",
   "bin": {
     "zli": "./bin/zli"
   },

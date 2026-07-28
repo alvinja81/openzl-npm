@@ -1,191 +1,248 @@
 # openzl-express
 
-Express middleware that compresses JSON responses with [OpenZL](https://github.com/facebook/openzl) (Meta's format-aware compression framework) for clients that opt in — and standard **gzip for everyone else**.
+Express middleware + Node core for [OpenZL](https://github.com/facebook/openzl) — Meta’s format-aware compression.
 
-## How it works
-
-The middleware negotiates compression from the client's `Accept-Encoding` header:
-
-| Client sends | Response |
-|---|---|
-| `Accept-Encoding: openzl` | OpenZL-compressed (`Content-Encoding: openzl`) |
-| `Accept-Encoding: gzip` (browsers, curl, axios — the default) | gzip-compressed |
-| Neither | Uncompressed JSON |
-
-Browsers and normal HTTP clients never receive OpenZL data by accident — they get gzip, which they decode transparently. Only clients that explicitly send `Accept-Encoding: openzl` (and know how to decode it) get OpenZL.
-
-If the OpenZL CLI is missing or fails, the middleware automatically falls back to gzip.
-
-## Installation
+**Not a gzip replacement.** Opt-in clients (`Accept-Encoding: openzl`), gzip for everyone else, measured wins and losses.
 
 ```bash
 npm install openzl-express
 ```
 
-This pulls in [`@amirja811/openzl-cli`](https://www.npmjs.com/package/@amirja811/openzl-cli) as an optional dependency, which provides the `zli` binary.
+Fallback chain on every install / request:
 
-> **Platform support:** prebuilt `zli` binaries are currently available for **macOS (Apple Silicon)** and **Linux (x64/arm64)** where CI has built them. On other platforms the middleware still works — it serves gzip. You can also [build `zli` from source](https://github.com/facebook/openzl).
+```
+native N-API prebuild  →  zli CLI (optionalDependency)  →  gzip  →  identity
+```
 
-## Usage
+Nothing here fails `npm install`. Missing native or CLI simply means more gzip.
 
-### Basic setup
+---
 
-```typescript
+## Measured performance (honest)
+
+### Encode latency (Apple Silicon, ~100 KB class)
+
+| Backend | Encode p50 | Notes |
+|---------|------------|--------|
+| **Native N-API** | **~0.1–0.4 ms** | Phase 2; same class as zstd L3 |
+| CLI `zli` pipes (raw binary) | ~2–4 ms | Phase 1 |
+| CLI via Node launcher + temp files | ~30 ms | Phase 0 (fixed) |
+
+Sources: `bench/results/phase0-baseline.md`, `phase1-baseline.md`, `phase2-baseline.md`.
+
+### Ratio — trained profiles vs gzip / zstd (~100 KB)
+
+| Corpus | gzip6 | zstd3 | openzl **trained** |
+|--------|------:|------:|-------------------:|
+| A api-list | 6.0% | 5.5% | **4.7%** (api-list) |
+| B timeseries | 26.3% | 25.8% | **23.8%** (timeseries) |
+| C prose | 2.9% | 2.0% | **2.1%** (prose) |
+| F binary records | 62.9% | 52.5% | **13.8%** (binary) |
+
+Full table: `bench/results/phase3-profiles.md`.
+
+**Takeaway:** train on your shape. Binary/typed data is where OpenZL earns its name. Generic prose is competitive, not magic.
+
+### Browser WASM decoder
+
+| | |
+|--|--:|
+| `openzl_decode.wasm` | **~1.3 MB** (wasm64) |
+| Decode p50 (~29 KB JSON) | **~0.04 ms** |
+| Break-even vs gzip (transfer) | **~1.6k similar responses/session** before WASM download pays off |
+
+Detail: `bench/results/phase4-wasm.md`, `browser/README.md`.
+
+---
+
+## Positioning (earned)
+
+> Better ratio for shape-matched / typed payloads when you train. Competitive encode latency with the native addon. Opt-in clients only.
+
+Not for every page. Fine.
+
+---
+
+## Quick start
+
+```ts
 import express from 'express';
 import { openzlMiddleware } from 'openzl-express';
 
 const app = express();
-app.use(openzlMiddleware());
+app.use(openzlMiddleware({
+  threshold: 1024,
+  profile: 'serial',           // or 'timeseries' | 'api-list' | 'binary' | path.zlc
+  // selectProfile: (req) => req.path.startsWith('/metrics') ? 'timeseries' : 'api-list',
+  fallbackToGzip: true,
+  preferStreamGzip: true,      // sendFile streams gzip when client accepts both
+}));
 
 app.get('/api/data', (req, res) => {
-  res.json({ data: [/* large dataset */] });
+  res.json({ data: [/* … */] });
 });
 
 app.listen(3000);
 ```
 
-### With configuration
+### Negotiation
 
-```typescript
-app.use(openzlMiddleware({
-  enabled: true,        // Enable/disable compression (default: true)
-  threshold: 1024,      // Min size in bytes to compress (default: 1024)
-  fallbackToGzip: true, // Fallback to gzip if OpenZL fails (default: true)
-  debug: false,         // Enable debug logging (default: false)
-  onError: (err, req, res) => {
-    console.error('Compression error:', err);
-  }
-}));
-```
+| Client `Accept-Encoding` | Server |
+|--------------------------|--------|
+| `openzl` (explicit) | `Content-Encoding: openzl` |
+| `gzip` / `*` | `Content-Encoding: gzip` |
+| neither | uncompressed |
 
-### Core API (framework-free)
+Browsers never get OpenZL by accident — they don’t send `openzl`.
 
-The compression engine and HTTP negotiation live outside Express. Use them from any Node server or client:
+### Coverage (Express)
 
-```typescript
+Hooks `res.write` / `res.end` → covers **`res.json`**, **`res.send`**, multi-chunk streams, **`res.sendFile`**.
+
+- **gzip:** real streaming (`zlib.createGzip`) — good TTFB  
+- **openzl:** whole-body buffer then compress (no stream encoder yet)
+
+### Core API (no Express)
+
+```ts
 import {
-  compress,
-  decompress,
-  compressGzip,
-  pickEncoding,
-  checkCLIAvailable
+  compress, decompress, pickEncoding,
+  isNativeAvailable, getActiveBackend, listProfiles
 } from 'openzl-express';
 
-// Content negotiation (same rules as the middleware)
 pickEncoding('openzl, gzip;q=0.8'); // 'openzl'
-pickEncoding('gzip');               // 'gzip'
-pickEncoding(undefined);            // 'identity'
 
-// Bytes in / bytes out (OpenZL via zli CLI today)
-const zl = await compress(Buffer.from(JSON.stringify(payload)));
+const zl = await compress(Buffer.from(JSON.stringify(payload)), {
+  profile: 'timeseries'
+});
 const raw = await decompress(zl);
 
-// Gzip helper (Node zlib) for fallbacks
-const gz = await compressGzip(Buffer.from('hello'));
+console.log(await getActiveBackend()); // 'native' | 'pool' | 'cli-pipe'
+console.log(listProfiles());
 ```
 
-Wire contract:
+### Node client
 
-| Role | Header |
-|------|--------|
-| Client opt-in | `Accept-Encoding: openzl` (add `gzip` as backup) |
-| Server OpenZL | `Content-Encoding: openzl` + `Vary: Accept-Encoding` |
-| Server fallback | `Content-Encoding: gzip` or uncompressed |
-
-### Consuming OpenZL responses from a Node.js client
-
-```typescript
+```ts
 import { decompress } from 'openzl-express';
 
-const res = await fetch('http://localhost:3000/api/data', {
-  headers: { 'Accept-Encoding': 'openzl' }
-});
-
-let body = Buffer.from(await res.arrayBuffer());
+const res = await fetch(url, { headers: { 'Accept-Encoding': 'openzl, gzip' } });
+let buf = Buffer.from(await res.arrayBuffer());
 if (res.headers.get('content-encoding') === 'openzl') {
-  body = await decompress(body);
-}
-const data = JSON.parse(body.toString('utf-8'));
-```
-
-### Checking CLI availability
-
-```typescript
-import { checkCLIAvailable } from 'openzl-express';
-
-if (!(await checkCLIAvailable())) {
-  console.warn('OpenZL CLI not found — responses will use gzip');
+  buf = await decompress(buf);
 }
 ```
 
-## Response headers
+### Browser client
 
-OpenZL-compressed responses:
+```js
+import { createOpenZLFetch } from 'openzl-express/browser/fetch-openzl.js';
+// after: npm run build:wasm  (needs Emscripten; wasm64)
 
-```
-Content-Encoding: openzl
-Content-Type: application/json; charset=utf-8
-Vary: Accept-Encoding
-X-OpenZL-Ratio: 23.45%
-X-Original-Size: 125000
-X-Compressed-Size: 29312
-```
-
-Gzip fallback after an OpenZL failure additionally carries:
-
-```
-X-Compression-Fallback: gzip
-X-OpenZL-Error: OpenZLCLINotFoundError
+const fetchOzl = await createOpenZLFetch();
+const res = await fetchOzl('/api/data', {
+  headers: { 'Accept-Encoding': 'openzl, gzip' }
+});
 ```
 
-## API reference
+Always keep **gzip** in Accept-Encoding for clients without wasm64.
 
-### `openzlMiddleware(options?)`
+---
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `enabled` | `boolean` | `true` | Enable or disable compression |
-| `threshold` | `number` | `1024` | Minimum response size in bytes to trigger compression |
-| `fallbackToGzip` | `boolean` | `true` | Fallback to gzip if OpenZL fails |
-| `onError` | `function` | `undefined` | Error handler: `(err, req, res) => void` |
-| `debug` | `boolean` | `false` | Enable debug logging |
+## Install & platforms
 
-### Other exports
+| Layer | Platforms (CI) | On missing |
+|-------|----------------|------------|
+| `@amirja811/openzl-cli` (`zli`) | darwin-arm64, darwin-x64, linux-x64, linux-arm64, **win32-x64** | gzip only |
+| Native N-API prebuild | same matrix via GitHub Releases | CLI → gzip |
+| WASM browser | build locally / ship `browser/dist` | gzip |
 
-| Export | Description |
-|--------|-------------|
-| `compress` / `decompress` | OpenZL bytes (preferred) |
-| `compressWithOpenZL` / `decompressWithOpenZL` | Aliases of the above |
-| `compressGzip` / `decompressGzip` | Node zlib helpers |
-| `pickEncoding` / `parseAcceptEncoding` | Accept-Encoding negotiation |
-| `checkCLIAvailable()` | `Promise<boolean>` |
-| `resetCLICache()` | Clear cached `zli` path |
-| `OpenZLCLINotFoundError`, `CompressionError` | Error classes |
+```bash
+# Optional: local native build
+git clone --depth 1 https://github.com/facebook/openzl.git openzl
+npm run build:openzl && npm run build:native
 
-## Performance notes
+# Optional: browser WASM
+npm run build:wasm   # requires emcc
+```
 
-- **Encode path (fastest first):** native N-API addon (default `serial`) → worker pool → `zli` CLI pipes. With native built, encode p50 is ~0.1–0.4 ms for ~100KB (see `bench/results/baseline.md`). Without native, CLI path is ~2–4 ms.
-- **Profiles (Phase 3):** `compress(buf, { profile: 'timeseries' })` or middleware `{ profile: 'api-list' }` / `selectProfile`. Shipped trained compressors live in `profiles/` (`npm run train:profiles` to regenerate). Best wins on typed/numeric/binary; prose is often a wash — see `bench/results/phase3-profiles.md`.
-- Build native (optional): clone [facebook/openzl](https://github.com/facebook/openzl) into `./openzl`, then `npm run build:openzl && npm run build:native`. Disable with `OPENZL_NATIVE=0`.
-- Worker pool: `OPENZL_POOL_SIZE` (default `2`; `0` = one-shot). Call `shutdownOpenZL()` on server shutdown.
-- Tune `threshold` for tiny payloads; benchmark with **your** data.
-- The CLI location is detected once per process and cached.
-- Compression runs asynchronously and does not block the event loop.
+Env knobs:
+
+| Variable | Effect |
+|----------|--------|
+| `OPENZL_NATIVE=0` | Force CLI/gzip (ignore addon) |
+| `OPENZL_SKIP_NATIVE=1` | Skip install-time prebuild download |
+| `OPENZL_POOL_SIZE=0` | Disable CLI worker pool |
+| `OPENZL_NATIVE_URL` | Override prebuild download URL |
+
+`postinstall` runs `scripts/install-native.mjs` and **never fails** the install.
+
+---
+
+## Middleware options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `enabled` | `true` | Master switch |
+| `threshold` | `1024` | Min body bytes to compress |
+| `fallbackToGzip` | `true` | On OpenZL error |
+| `profile` | `'serial'` | Shipped or builtin profile / `.zlc` path |
+| `selectProfile` | — | `(req, body, size) => profileName` |
+| `preferStreamGzip` | `true` | Prefer gzip stream for `sendFile` when both accepted |
+| `filter` | compressible types | `(req, res) => boolean` |
+| `debug` | `false` | Logs |
+| `onError` | — | `(err, req, res) => void` |
+
+---
+
+## Scripts
+
+| Script | Purpose |
+|--------|---------|
+| `npm test` | Middleware smoke tests |
+| `npm run bench` | Full codec matrix |
+| `npm run train:profiles` | Regenerate `profiles/*.zlc` |
+| `npm run build:native` | Local N-API addon |
+| `npm run build:wasm` | Browser decoder |
+
+---
+
+## Roadmap status
+
+| Phase | Status | One-liner |
+|-------|--------|-----------|
+| 0 Baseline | done | Bench harness + zstd honesty |
+| 1 Kill spawn | done | ~30 ms → ~3 ms (raw `zli` + pipes) |
+| 2 Native | done | ~0.1–0.4 ms encode |
+| 3 Profiles | done | Trained ratio wins on typed data |
+| 4 WASM | done | Browser decode + amortization number |
+| 5 Coverage | done | send / stream / sendFile |
+| 6 Ship | done | Windows zli, native prebuilds CI, install chain |
+
+See `ROADMAP.md`.
+
+---
 
 ## Troubleshooting
 
-- **`X-OpenZL-Error` header present** — OpenZL failed; the response fell back to gzip. Enable `debug: true` to see why.
-- **No compression at all** — response below `threshold`, or client sent no usable `Accept-Encoding`.
-- **`zli: no OpenZL binary available for <platform>`** — no prebuilt binary for your OS/arch; build from [facebook/openzl](https://github.com/facebook/openzl) or rely on gzip.
+| Symptom | Likely cause |
+|---------|----------------|
+| Always gzip | No `Accept-Encoding: openzl`, or no native/CLI |
+| `X-OpenZL-Error` | OpenZL failed; gzip fallback used |
+| No compression | Below `threshold` or `identity` |
+| WASM won’t load | Need **wasm64** browser/Node; fall back to gzip |
+| Native missing after install | No release prebuild for platform yet; CLI still works |
+
+---
 
 ## Related
 
-- [OpenZL](https://github.com/facebook/openzl) — the compression framework (Meta)
-- [`@amirja811/openzl-cli`](https://www.npmjs.com/package/@amirja811/openzl-cli) — prebuilt `zli` binaries
+- [OpenZL](https://github.com/facebook/openzl) (Meta)
+- [`@amirja811/openzl-cli`](https://www.npmjs.com/package/@amirja811/openzl-cli) — prebuilt `zli`
 
 ## Disclaimer
 
-This is an unofficial community package. It is not affiliated with or endorsed by Meta or the OpenZL project.
+Unofficial community package. Not affiliated with Meta.
 
 ## License
 

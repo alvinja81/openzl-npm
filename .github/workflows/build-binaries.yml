@@ -22,6 +22,8 @@ jobs:
             platform: linux-x64
           - os: ubuntu-24.04-arm
             platform: linux-arm64
+          - os: windows-latest
+            platform: win32-x64
 
     runs-on: ${{ matrix.os }}
 
@@ -32,12 +34,26 @@ jobs:
       - name: Clone OpenZL repository
         run: git clone --depth 1 https://github.com/facebook/openzl.git openzl
 
-      - name: Build OpenZL CLI
+      - name: Build OpenZL CLI (Unix)
+        if: runner.os != 'Windows'
         run: |
           cd openzl
           make zli
 
-      - name: Copy binary
+      - name: Build OpenZL CLI (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          cd openzl
+          cmake -B build -DCMAKE_BUILD_TYPE=Release \
+            -DOPENZL_BUILD_TESTS=OFF \
+            -DOPENZL_BUILD_BENCHMARKS=OFF \
+            -DOPENZL_BUILD_EXAMPLES=OFF \
+            -DOPENZL_BUILD_PYTHON_EXT=OFF
+          cmake --build build --config Release --target zli -j
+
+      - name: Copy binary (Unix)
+        if: runner.os != 'Windows'
         run: |
           mkdir -p "@openzl-cli/build/binaries/${{ matrix.platform }}"
           zli_path=$(find openzl -type f -name zli -perm -111 | head -1)
@@ -48,9 +64,27 @@ jobs:
           cp "$zli_path" "@openzl-cli/build/binaries/${{ matrix.platform }}/zli"
           chmod +x "@openzl-cli/build/binaries/${{ matrix.platform }}/zli"
 
-      - name: Test binary
+      - name: Copy binary (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
         run: |
-          "@openzl-cli/build/binaries/${{ matrix.platform }}/zli" --version
+          mkdir -p "@openzl-cli/build/binaries/${{ matrix.platform }}"
+          zli_path=$(find openzl -type f \( -name zli.exe -o -name zli \) | head -1)
+          if [ -z "$zli_path" ]; then
+            echo "zli.exe not found after build" >&2
+            find openzl -name '*zli*' | head -40
+            exit 1
+          fi
+          cp "$zli_path" "@openzl-cli/build/binaries/${{ matrix.platform }}/zli.exe"
+
+      - name: Test binary
+        shell: bash
+        run: |
+          if [ -f "@openzl-cli/build/binaries/${{ matrix.platform }}/zli.exe" ]; then
+            "@openzl-cli/build/binaries/${{ matrix.platform }}/zli.exe" --version
+          else
+            "@openzl-cli/build/binaries/${{ matrix.platform }}/zli" --version
+          fi
 
       - name: Upload binary artifact
         uses: actions/upload-artifact@v4
@@ -71,8 +105,6 @@ jobs:
 
     permissions:
       contents: read
-      # Required to mint the OIDC token npm exchanges for a short-lived
-      # publish credential (trusted publishing) and to sign provenance.
       id-token: write
 
     steps:
@@ -85,7 +117,6 @@ jobs:
           node-version: '22'
           registry-url: 'https://registry.npmjs.org'
 
-      # Node 22 ships npm 10.x; trusted publishing needs npm >= 11.5.1.
       - name: Upgrade npm
         run: |
           npm install -g npm@^11
@@ -104,7 +135,8 @@ jobs:
             platform=${platform#zli-}
             mkdir -p "@openzl-cli/build/binaries/$platform"
             cp -r "$dir"/* "@openzl-cli/build/binaries/$platform/"
-            chmod +x "@openzl-cli/build/binaries/$platform/zli" || true
+            chmod +x "@openzl-cli/build/binaries/$platform/zli" 2>/dev/null || true
+            chmod +x "@openzl-cli/build/binaries/$platform/zli.exe" 2>/dev/null || true
           done
           ls -laR @openzl-cli/build/binaries
 
@@ -115,8 +147,6 @@ jobs:
           npm install -g amirja811-openzl-cli-*.tgz
           zli --version
 
-      # Primary path: trusted publishing. No secret is used here on purpose --
-      # if NODE_AUTH_TOKEN is present npm prefers it and skips OIDC entirely.
       - name: Publish to npm (trusted publishing)
         id: publish_oidc
         if: github.event_name == 'release'
@@ -124,9 +154,6 @@ jobs:
         working-directory: '@openzl-cli'
         run: npm publish --access public --provenance
 
-      # Fallback path: granular access token, scoped to this package only.
-      # Runs only if OIDC publishing failed (trusted publisher not yet
-      # configured, npm OIDC outage, etc).
       - name: Publish to npm (granular token fallback)
         if: github.event_name == 'release' && steps.publish_oidc.outcome == 'failure'
         working-directory: '@openzl-cli'
@@ -138,9 +165,6 @@ jobs:
           name=$(node -p "require('./package.json').name")
           version=$(node -p "require('./package.json').version")
 
-          # The OIDC step may have failed *after* the registry accepted the
-          # upload. Re-publishing would then hard-fail on EPUBLISHCONFLICT,
-          # so treat an already-present version as success.
           if npm view "$name@$version" version >/dev/null 2>&1; then
             echo "$name@$version already on registry; OIDC publish succeeded late. Nothing to do."
             exit 0
@@ -148,7 +172,6 @@ jobs:
 
           if [ -z "${NODE_AUTH_TOKEN:-}" ]; then
             echo "Trusted publishing failed and no NPM_TOKEN secret is set." >&2
-            echo "Configure the trusted publisher on npmjs.com, or add a granular token." >&2
             exit 1
           fi
 
@@ -162,7 +185,6 @@ jobs:
           name=$(node -p "require('./@openzl-cli/package.json').name")
           version=$(node -p "require('./@openzl-cli/package.json').version")
 
-          # Registry reads can lag a fresh publish; retry before declaring failure.
           for attempt in 1 2 3 4 5; do
             if npm view "$name@$version" version; then
               echo "$name@$version is live."

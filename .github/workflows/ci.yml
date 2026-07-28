@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        node: [18, 20, 22]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Install
+        run: npm ci || npm install
+      - name: Build TypeScript
+        run: npm run build
+      - name: Middleware tests
+        run: node scripts/test-middleware.mjs
+        # OpenZL optional — gzip path always works; openzl cases need zli/native
+        continue-on-error: false
+      - name: Install optional CLI (best effort)
+        run: npm install @amirja811/openzl-cli@^0.2.0 --no-save || true
+      - name: Re-run tests with CLI if present
+        run: node scripts/test-middleware.mjs || true
+
+  publish-express:
+    if: github.event_name == 'push' && false # enable when ready; use release workflow instead
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4

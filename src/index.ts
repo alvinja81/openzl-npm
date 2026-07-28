@@ -21,6 +21,7 @@ export {
   decompress,
   compressGzip,
   decompressGzip,
+  createGzipStream,
   pickEncoding,
   parseAcceptEncoding,
   checkCLIAvailable,

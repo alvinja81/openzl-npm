@@ -31,6 +31,8 @@ zli decompress output.zl -o restored.json
 | macOS x64 (Intel) | ❌ not bundled — build from source |
 | Windows | ❌ not bundled — build from source |
 
+Prebuilt platforms (CI): **darwin-arm64**, **darwin-x64**, **linux-x64**, **linux-arm64**, **win32-x64**.
+
 On unsupported platforms, `zli` prints a clear error and exits with code 1. Installation itself never fails — the postinstall step only warns. To build from source, see [facebook/openzl](https://github.com/facebook/openzl).
 
 ## How it works

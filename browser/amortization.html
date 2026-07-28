@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>OpenZL WASM amortization</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 40rem; margin: 2rem auto; padding: 0 1rem; }
+    label { display: block; margin: 0.75rem 0 0.25rem; }
+    input { width: 100%; padding: 0.4rem; font-size: 1rem; }
+    output { display: block; margin-top: 1.5rem; padding: 1rem; background: #f4f4f5; border-radius: 8px; white-space: pre-wrap; }
+    .good { color: #166534; }
+    .bad { color: #991b1b; }
+  </style>
+</head>
+<body>
+  <h1>OpenZL vs gzip amortization</h1>
+  <p>
+    Is shipping the WASM decoder worth it for a session?
+    <code>wasm + Σ openzl &lt; Σ gzip</code>
+  </p>
+  <label>WASM size (bytes) — default ≈ current openzl_decode.wasm</label>
+  <input id="wasm" type="number" value="1360000" />
+  <label>Total OpenZL compressed bytes this session</label>
+  <input id="openzl" type="number" value="500000" />
+  <label>Total gzip compressed bytes (same payloads)</label>
+  <input id="gzip" type="number" value="800000" />
+  <output id="out"></output>
+  <script type="module">
+    import { amortization } from './openzl-decoder.js';
+
+    const wasmEl = document.getElementById('wasm');
+    const ozEl = document.getElementById('openzl');
+    const gzEl = document.getElementById('gzip');
+    const out = document.getElementById('out');
+
+    // Try to fill real wasm size
+    try {
+      const r = await fetch('./dist/openzl_decode.wasm', { method: 'HEAD' });
+      const len = r.headers.get('content-length');
+      if (len) wasmEl.value = len;
+    } catch { /* offline / file:// */ }
+
+    function fmt(n) {
+      if (n >= 1e6) return (n / 1e6).toFixed(2) + ' MB';
+      if (n >= 1e3) return (n / 1e3).toFixed(1) + ' KB';
+      return n + ' B';
+    }
+
+    function recalc() {
+      const r = amortization({
+        wasmBytes: Number(wasmEl.value) || 0,
+        openzlTotal: Number(ozEl.value) || 0,
+        gzipTotal: Number(gzEl.value) || 0
+      });
+      out.className = r.worthIt ? 'good' : 'bad';
+      out.textContent =
+        (r.worthIt ? '✓ Worth it for this session\n' : '✗ Not worth it yet\n') +
+        `OpenZL cost:  ${fmt(r.openzlCost)}  (wasm + payloads)\n` +
+        `gzip cost:    ${fmt(r.gzipCost)}\n` +
+        `saved:        ${fmt(r.saved)}\n` +
+        `Break-even when Σ openzl compressed < ${fmt(r.breakEvenOpenzlBytes)} ` +
+        `(given this gzip total and wasm size).`;
+    }
+    for (const el of [wasmEl, ozEl, gzEl]) el.addEventListener('input', recalc);
+    recalc();
+  </script>
+</body>
+</html>

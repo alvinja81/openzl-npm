@@ -9,11 +9,18 @@ coverage/
 .vscode/
 .idea/
 
-# Native / OpenZL build trees (large; rebuild with npm run build:openzl / build:native)
+# Native / OpenZL build trees (large; rebuild with npm run build:openzl / build:native / build:wasm)
 native/build/
 openzl/build/
 openzl/build-lib/
+openzl/build-wasm/
 openzl/cmakebuild/
+# browser/dist/*.wasm is large — rebuild with npm run build:wasm (keep glue sources)
+# Uncomment to ignore committed wasm artifacts:
+# browser/dist/
+
+# Platform prebuilds are produced by CI / install-native (optional commit)
+prebuilds/
 
 # Generated training samples (compressors *.zlc are shipped)
 profiles/samples/

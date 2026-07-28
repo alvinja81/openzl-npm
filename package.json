@@ -1,28 +1,48 @@
 {
   "name": "openzl-express",
-  "version": "0.2.0",
-  "description": "Express middleware for compressing JSON responses using OpenZL, with automatic gzip fallback",
+  "version": "0.3.0",
+  "description": "Express middleware + core for OpenZL compression with gzip fallback, profiles, and optional native/WASM",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./browser/*": "./browser/*"
+  },
   "files": [
     "dist",
     "profiles/*.zlc",
     "profiles/manifest.json",
+    "prebuilds",
     "native/CMakeLists.txt",
     "native/src",
     "scripts/build-openzl.sh",
     "scripts/build-native.sh",
-    "scripts/train-profiles.mjs"
+    "scripts/build-wasm.sh",
+    "scripts/train-profiles.mjs",
+    "scripts/install-native.mjs",
+    "browser/openzl-decoder.js",
+    "browser/fetch-openzl.js",
+    "browser/sw-openzl.js",
+    "browser/amortization.html",
+    "browser/README.md",
+    "browser/dist",
+    "wasm/src"
   ],
   "scripts": {
     "build": "tsc",
     "build:openzl": "bash scripts/build-openzl.sh",
     "build:native": "bash scripts/build-native.sh",
+    "build:wasm": "bash scripts/build-wasm.sh",
     "build:all": "npm run build && npm run build:native",
     "train:profiles": "node scripts/train-profiles.mjs",
+    "postinstall": "node scripts/install-native.mjs",
     "dev": "nodemon --exec ts-node src/index.ts",
-    "test": "ts-node example/server.ts",
+    "test": "npm run build && node scripts/test-middleware.mjs",
+    "test:server": "ts-node example/server.ts",
     "bench": "npm run build && node --experimental-strip-types bench/run.ts",
     "bench:quick": "npm run build && node --experimental-strip-types bench/run.ts --quick",
     "bench:full": "npm run build && node --experimental-strip-types bench/run.ts --full",

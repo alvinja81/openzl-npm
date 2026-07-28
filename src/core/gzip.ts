@@ -1,4 +1,4 @@
-import { gzip, gunzip } from 'zlib';
+import { gzip, gunzip, createGzip, type Gzip, type ZlibOptions } from 'zlib';
 import { promisify } from 'util';
 
 const gzipAsync = promisify(gzip);
@@ -13,3 +13,8 @@ export const compressGzip = (buffer: Buffer): Promise<Buffer> => gzipAsync(buffe
  * Decompress gzip bytes.
  */
 export const decompressGzip = (buffer: Buffer): Promise<Buffer> => gunzipAsync(buffer);
+
+/**
+ * Streaming gzip Transform (for Express write/end / sendFile piping).
+ */
+export const createGzipStream = (options?: ZlibOptions): Gzip => createGzip(options);
