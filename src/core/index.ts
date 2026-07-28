@@ -1,13 +1,10 @@
 /**
- * Framework-free OpenZL core.
- *
- * Use this from any Node server/client. Express middleware is a thin adapter
- * on top of these APIs.
+ * Framework-free OpenZL / multi-codec core.
  *
  * Wire contract:
- * - Client:  Accept-Encoding: openzl   (and usually gzip as fallback)
- * - Server:  Content-Encoding: openzl | gzip  +  Vary: Accept-Encoding
- * - If OpenZL is unavailable → gzip or identity
+ * - Client:  Accept-Encoding: openzl (opt-in), zstd, gzip
+ * - Server:  Content-Encoding: openzl | zstd | gzip  +  Vary: Accept-Encoding
+ * - openzl never selected via `*`
  */
 
 export type {
@@ -40,3 +37,10 @@ export {
 export type { BackendKind, CompressOptions, ResolvedProfile } from './engine.js';
 
 export { compressGzip, decompressGzip, createGzipStream } from './gzip.js';
+
+export {
+  isZstdAvailable,
+  compressZstd,
+  decompressZstd,
+  createZstdStream
+} from './zstd.js';

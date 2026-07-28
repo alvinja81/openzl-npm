@@ -34,11 +34,20 @@ export interface OpenZLMiddlewareOptions {
 
   /**
    * When OpenZL is negotiated but the response is streamed (`write`/`sendFile`),
-   * prefer **gzip streaming** for TTFB if the client also accepts gzip.
+   * prefer **gzip/zstd streaming** for TTFB if the client also accepts them.
    * OpenZL still has no true stream encoder in this package.
    * @default true
    */
   preferStreamGzip?: boolean;
+
+  /**
+   * Allow zstd when the runtime and client support it.
+   * Default: true if `zlib.zstdCompress` exists.
+   */
+  allowZstd?: boolean;
+
+  /** Zstd compression level (Node zlib params). Default: zlib default. */
+  zstdLevel?: number;
 
   /** Custom error handler for compression failures */
   onError?: (error: Error, req: Request, res: Response) => void;

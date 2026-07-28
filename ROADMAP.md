@@ -8,7 +8,7 @@
 >
 > **Not the goal:** claiming “always better than zstd.” **The goal:** boring install, multi-codec negotiate, sharp wins on shaped data, opt-in clients only.
 
-**Current position:** Series 1 complete · Series 2 not started · package `0.3.0` · branch `main`
+**Current position:** Series 2 · **Phase 7 done** (multi-codec) · next Phase 9 (release) or 8 (core split) · package `0.3.0`
 
 **Status legend:** `[ ]` not started · `[~]` in progress · `[x]` done
 
@@ -96,10 +96,11 @@ and gets:
 
 ## Phase 7 — Multi-codec core (gzip · zstd · openzl)
 
-**Status:** `[ ]`  
+**Status:** `[x]`  
 **Size:** ~2–3 sessions  
-**Depends on:** nothing (start here)  
-**Priority:** **P0 — do first**
+**Depends on:** nothing  
+**Done:** 2026-07-28 — `src/core/zstd.ts`, negotiate + middleware  
+**Priority:** P0
 
 ### Goal
 
@@ -107,32 +108,24 @@ Make **zstd a first-class peer** of gzip. Negotiation and middleware become a re
 
 ### Tasks
 
-- [ ] Extend `ContentEncoding` → `'openzl' | 'zstd' | 'gzip' | 'identity'`
-- [ ] `pickEncoding`:
-  - [ ] `openzl` only if listed explicitly (never `*`)
-  - [ ] `zstd` if listed **or** via `*` when Node has zstd (document rule)
-  - [ ] `gzip` as today
-  - [ ] q-values + stable tie-break: preferOpenZL → then zstd → gzip (configurable)
-- [ ] Runtime detect `zlib.zstdCompress` / `zstdCompressSync` (Node 22.15+ / 23+)
-- [ ] Middleware encode paths:
-  - [ ] **zstd** streaming if API allows, else buffer (match Node zlib capabilities)
-  - [ ] **gzip** keep Transform stream
-  - [ ] **openzl** keep whole-body buffer
-- [ ] Policy helper: `selectEncoding({ accept, hasOpenZL, hasZstd, profileKnown, size })`
-- [ ] Default ladder when client sends `gzip, deflate, br` only → gzip (or zstd if they send zstd)
-- [ ] Client sends `openzl, zstd, gzip` + profile set → openzl when enabled; else zstd; else gzip
-- [ ] Bench matrix: add zstd to middleware path (not only microbench)
-- [ ] Tests: negotiate matrix + middleware encodings
-- [ ] Docs: “heroes are gzip/zstd; openzl is specialty”
+- [x] Extend `ContentEncoding` → `'openzl' | 'zstd' | 'gzip' | 'identity'`
+- [x] `pickEncoding`: openzl never via `*`; zstd explicit (optional `starMeansZstd`); gzip via `*`
+- [x] Runtime detect zstd via `zlib` (graceful if missing)
+- [x] Middleware: zstd stream (`createZstdCompress`), gzip stream, openzl buffer
+- [x] Fallback ladder after openzl failure: zstd → gzip → identity
+- [x] sendFile preferStream: zstd or gzip when openzl negotiated + client allows
+- [x] Tests: zstd encode/decode + negotiate unit checks in `test-middleware.mjs`
+- [ ] Bench harness: re-run full matrix documenting middleware zstd path (optional follow-up)
+- [ ] Docs polish in README multi-codec section (partial — expand in 0.4 release notes)
 
 ### Reach
 
-Users can replace many `compression` setups and **gain zstd** even when they never enable OpenZL.
+**Hit.** Clients sending `Accept-Encoding: zstd` get zstd; `openzl, zstd, gzip` prefers openzl; browser-like `gzip, deflate, br` stays gzip. Heroes available without OpenZL.
 
 ### Notes
 
-- Node without zstd: skip silently, gzip remains.
-- Browsers often lack zstd Content-Encoding historically — check current browser matrix when documenting client advice; server still fine for Node↔Node / modern stacks.
+- `*` does **not** imply zstd by default (`starMeansZstd: false`) — safer for legacy clients.
+- Node without zstd: zstd candidates omitted automatically.
 
 ---
 

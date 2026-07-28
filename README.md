@@ -8,13 +8,11 @@ Express middleware + Node core for [OpenZL](https://github.com/facebook/openzl) 
 npm install openzl-express
 ```
 
-Fallback chain on every install / request:
+**Codec ladder (per request):** `openzl` (explicit opt-in) → **zstd** → **gzip** → identity  
 
-```
-native N-API prebuild  →  zli CLI (optionalDependency)  →  gzip  →  identity
-```
+**Install / OpenZL encode ladder:** native N-API → zli CLI → (zstd/gzip still work)  
 
-Nothing here fails `npm install`. Missing native or CLI simply means more gzip.
+Nothing fails `npm install`. Missing native/CLI means more zstd/gzip — not a broken app.
 
 ---
 
@@ -90,7 +88,9 @@ app.listen(3000);
 | Client `Accept-Encoding` | Server |
 |--------------------------|--------|
 | `openzl` (explicit) | `Content-Encoding: openzl` |
-| `gzip` / `*` | `Content-Encoding: gzip` |
+| `zstd` (Node with zlib zstd) | `Content-Encoding: zstd` |
+| `gzip` / `*` | `Content-Encoding: gzip` (`*` ≠ openzl/zstd by default) |
+| `openzl, zstd, gzip` | prefers **openzl**, then zstd, then gzip |
 | neither | uncompressed |
 
 Browsers never get OpenZL by accident — they don’t send `openzl`.

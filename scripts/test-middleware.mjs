@@ -8,7 +8,13 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import zlib from 'zlib';
-import { openzlMiddleware, decompress, decompressGzip } from '../dist/index.js';
+import {
+  openzlMiddleware,
+  decompress,
+  decompressZstd,
+  isZstdAvailable,
+  pickEncoding
+} from '../dist/index.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
@@ -135,8 +141,40 @@ const server = app.listen(0, async () => {
     await check('file+openzl-only', '/file', 'openzl', 'openzl', decompress);
     await check('small identity', '/json', 'identity', null, async (b) => b);
 
-    // threshold: tiny
-    // (skip)
+    // Phase 7: zstd peer
+    if (isZstdAvailable()) {
+      await check('json+zstd', '/json', 'zstd', 'zstd', decompressZstd);
+      await check('json+zstd,gzip', '/json', 'zstd, gzip', 'zstd', decompressZstd);
+      await check(
+        'openzl beats zstd when both',
+        '/json',
+        'openzl, zstd, gzip',
+        'openzl',
+        decompress
+      );
+      await check('stream+zstd', '/stream', 'zstd', 'zstd', decompressZstd);
+      // negotiate unit checks
+      if (pickEncoding('zstd, gzip') !== 'zstd') {
+        console.log('✗ pickEncoding zstd prefer');
+        failed++;
+      } else {
+        console.log('✓ pickEncoding zstd prefer');
+      }
+      if (pickEncoding('*') !== 'gzip') {
+        console.log('✗ pickEncoding * is gzip not zstd', pickEncoding('*'));
+        failed++;
+      } else {
+        console.log('✓ pickEncoding * → gzip (not zstd)');
+      }
+      if (pickEncoding('gzip, deflate, br') !== 'gzip') {
+        console.log('✗ pickEncoding browser-like', pickEncoding('gzip, deflate, br'));
+        failed++;
+      } else {
+        console.log('✓ pickEncoding browser-like → gzip');
+      }
+    } else {
+      console.log('⊘ zstd unavailable — skip zstd cases');
+    }
 
     if (failed) {
       console.error(`\n${failed} failed`);

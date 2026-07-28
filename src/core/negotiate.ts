@@ -1,4 +1,5 @@
 import type { ContentEncoding, PickEncodingOptions } from './types.js';
+import { isZstdAvailable } from './zstd.js';
 
 /**
  * Parse an Accept-Encoding header into encoding name → q-value.
@@ -38,17 +39,19 @@ export const parseAcceptEncoding = (
 /**
  * Choose a content encoding from Accept-Encoding (framework-free).
  *
- * Rules (gzip-like negotiation):
- * - `openzl` is only chosen when the client lists it explicitly (never via `*`)
- * - `*` counts as gzip support, not openzl
- * - Higher q-value wins; ties break toward openzl when preferOpenZL is true
+ * Rules:
+ * - `openzl` only when listed explicitly (never via `*`) — browsers stay safe
+ * - `gzip` from explicit `gzip` or `*`
+ * - `zstd` from explicit `zstd` (and optionally `*` if starMeansZstd)
+ * - Higher q wins; ties use preferOpenZL / preferZstd
  * - Returns `identity` when nothing usable is accepted
  *
  * @example
  * ```ts
- * pickEncoding('openzl, gzip;q=0.8') // 'openzl'
- * pickEncoding('gzip')               // 'gzip'
- * pickEncoding(undefined)            // 'identity'
+ * pickEncoding('openzl, zstd, gzip;q=0.8') // 'openzl' (if allowOpenZL)
+ * pickEncoding('zstd, gzip')               // 'zstd' when runtime has zstd
+ * pickEncoding('gzip')                     // 'gzip'
+ * pickEncoding(undefined)                  // 'identity'
  * ```
  */
 export const pickEncoding = (
@@ -57,18 +60,33 @@ export const pickEncoding = (
 ): ContentEncoding => {
   const {
     preferOpenZL = true,
+    preferZstd = true,
     allowGzip = true,
-    allowOpenZL = true
+    allowOpenZL = true,
+    allowZstd = isZstdAvailable(),
+    starMeansZstd = false
   } = options;
 
   const accepted = parseAcceptEncoding(acceptEncoding);
+  const star = accepted.get('*');
 
   const openzlQ = allowOpenZL ? accepted.get('openzl') : undefined;
+
+  let zstdQ: number | undefined;
+  if (allowZstd) {
+    const explicit = accepted.get('zstd');
+    if (starMeansZstd && star !== undefined && explicit !== undefined) {
+      zstdQ = Math.max(explicit, star);
+    } else if (starMeansZstd && star !== undefined) {
+      zstdQ = star;
+    } else {
+      zstdQ = explicit;
+    }
+  }
 
   let gzipQ: number | undefined;
   if (allowGzip) {
     const explicit = accepted.get('gzip');
-    const star = accepted.get('*');
     if (explicit !== undefined && star !== undefined) {
       gzipQ = Math.max(explicit, star);
     } else {
@@ -76,6 +94,7 @@ export const pickEncoding = (
     }
   }
 
+  // Tie scores: higher wins when q equal. Prefer openzl > zstd > gzip when flags on.
   type Candidate = { encoding: ContentEncoding; q: number; tie: number };
   const candidates: Candidate[] = [];
 
@@ -83,14 +102,22 @@ export const pickEncoding = (
     candidates.push({
       encoding: 'openzl',
       q: openzlQ,
-      tie: preferOpenZL ? 2 : 0
+      tie: preferOpenZL ? 3 : 0
+    });
+  }
+  if (zstdQ !== undefined) {
+    candidates.push({
+      encoding: 'zstd',
+      q: zstdQ,
+      // If preferOpenZL false, still prefer zstd over gzip when preferZstd
+      tie: preferZstd ? 2 : 1
     });
   }
   if (gzipQ !== undefined) {
     candidates.push({
       encoding: 'gzip',
       q: gzipQ,
-      tie: preferOpenZL ? 1 : 2
+      tie: preferZstd || preferOpenZL ? 1 : 2
     });
   }
 
