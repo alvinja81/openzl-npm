@@ -5,6 +5,9 @@
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "bin": {
+    "openzl-train": "./scripts/openzl-train.mjs"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -22,6 +25,7 @@
       "types": "./dist/fastify.d.ts",
       "import": "./dist/fastify.js"
     },
+    "./browser": "./browser/index.js",
     "./browser/*": "./browser/*"
   },
   "files": [
@@ -35,7 +39,9 @@
     "scripts/build-native.sh",
     "scripts/build-wasm.sh",
     "scripts/train-profiles.mjs",
+    "scripts/openzl-train.mjs",
     "scripts/install-native.mjs",
+    "browser/index.js",
     "browser/openzl-decoder.js",
     "browser/fetch-openzl.js",
     "browser/sw-openzl.js",
@@ -43,8 +49,14 @@
     "browser/README.md",
     "browser/dist",
     "wasm/src",
+    "examples/flagship-metrics",
     "CHANGELOG.md",
-    "docs/RELEASE.md"
+    "CODE_OF_CONDUCT.md",
+    "CONTRIBUTING.md",
+    "docs/RELEASE.md",
+    "docs/COMPAT.md",
+    "docs/BROWSER.md",
+    "docs/FLAGSHIP.md"
   ],
   "scripts": {
     "build": "tsc",
@@ -53,9 +65,12 @@
     "build:wasm": "bash scripts/build-wasm.sh",
     "build:all": "npm run build && npm run build:native",
     "train:profiles": "node scripts/train-profiles.mjs",
+    "openzl-train": "node scripts/openzl-train.mjs",
+    "demo:flagship": "npm run build && node examples/flagship-metrics/server.mjs",
     "postinstall": "node scripts/install-native.mjs",
     "dev": "nodemon --exec ts-node src/index.ts",
-    "test": "npm run build && node scripts/test-middleware.mjs && node scripts/test-fastify.mjs",
+    "test": "npm run build && node scripts/test-middleware.mjs && node scripts/test-fastify.mjs && node scripts/test-trust.mjs",
+    "test:trust": "npm run build && node scripts/test-trust.mjs",
     "test:server": "ts-node example/server.ts",
     "release:check": "npm run build && node scripts/release-check.mjs",
     "pack:smoke": "npm run build && node scripts/pack-smoke.mjs",

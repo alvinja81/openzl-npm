@@ -41,23 +41,28 @@ Full table: `bench/results/phase3-profiles.md`.
 
 **Takeaway:** train on your shape. Binary/typed data is where OpenZL earns its name. Generic prose is competitive, not magic.
 
-### Browser WASM decoder
+### Browser WASM decoder — **experimental**
 
 | | |
 |--|--:|
+| Status | **Not primary** — demoted in Phase 10 |
 | `openzl_decode.wasm` | **~1.3 MB** (wasm64) |
 | Decode p50 (~29 KB JSON) | **~0.04 ms** |
-| Break-even vs gzip (transfer) | **~1.6k similar responses/session** before WASM download pays off |
+| Break-even vs gzip (transfer) | **~1.6k similar responses/session** |
 
-Detail: `bench/results/phase4-wasm.md`, `browser/README.md`.
+**Default clients:** Node + **gzip/zstd**. Use browser decode only when you control both ends and amortization is proven. Details: [`docs/BROWSER.md`](docs/BROWSER.md).
 
 ---
 
 ## Positioning (earned)
 
-> Better ratio for shape-matched / typed payloads when you train. Competitive encode latency with the native addon. Opt-in clients only.
+> **Flagship:** metrics / time-series JSON (and typed binary exports). Train on your shape. Competitive encode latency with the native addon. Opt-in clients only.
 
-Not for every page. Fine.
+Not a gzip replacement. Not a default browser codec. Fine.
+
+- Case study + architecture: [`docs/FLAGSHIP.md`](docs/FLAGSHIP.md)
+- Live demo: `npm run demo:flagship` → `examples/flagship-metrics/`
+- Train custom profile: `npx openzl-train ./samples -o ./my.zlc`
 
 ---
 
@@ -136,11 +141,39 @@ pickEncoding('openzl, gzip;q=0.8'); // 'openzl'
 const zl = await compress(Buffer.from(JSON.stringify(payload)), {
   profile: 'timeseries'
 });
-const raw = await decompress(zl);
+const raw = await decompress(zl, {
+  maxInputBytes: 64 * 1024 * 1024,
+  maxOutputBytes: 256 * 1024 * 1024,
+  timeoutMs: 30_000
+});
 
 console.log(await getActiveBackend()); // 'native' | 'pool' | 'cli-pipe'
 console.log(listProfiles());
 ```
+
+### Trust (limits, metrics, errors)
+
+```ts
+import {
+  decompress, LimitError, openzlMiddleware
+} from 'openzl-express';
+
+// Bomb protection on decode
+try {
+  await decompress(frame, { maxOutputBytes: 8 * 1024 * 1024 });
+} catch (e) {
+  if (e instanceof LimitError) console.warn(e.code); // OUTPUT_TOO_LARGE | …
+}
+
+// Observability on the server
+app.use(openzlMiddleware({
+  onCompress: ({ encoding, ratio, ms, bytesIn, bytesOut }) => {
+    metrics.histogram('compress_ms', ms, { encoding });
+  }
+}));
+```
+
+See [docs/COMPAT.md](docs/COMPAT.md) for frame compatibility and the error/`code` table.
 
 ### Node client
 
@@ -154,19 +187,32 @@ if (res.headers.get('content-encoding') === 'openzl') {
 }
 ```
 
-### Browser client
+### Browser client (experimental)
 
 ```js
-import { createOpenZLFetch } from 'openzl-express/browser/fetch-openzl.js';
-// after: npm run build:wasm  (needs Emscripten; wasm64)
+// Experimental — prefer gzip/zstd for public UIs (docs/BROWSER.md)
+import { createOpenZLFetch } from 'openzl-express/browser';
+// requires shipped browser/dist or: npm run build:wasm
 
 const fetchOzl = await createOpenZLFetch();
 const res = await fetchOzl('/api/data', {
-  headers: { 'Accept-Encoding': 'openzl, gzip' }
+  headers: { 'Accept-Encoding': 'openzl, gzip' } // always keep gzip
 });
 ```
 
-Always keep **gzip** in Accept-Encoding for clients without wasm64.
+### Train a profile
+
+```bash
+# drop real response bodies under ./samples/
+npx openzl-train ./samples -o ./profiles/my-metrics.zlc -p serial
+```
+
+### Flagship demo
+
+```bash
+npm run demo:flagship
+# http://127.0.0.1:3456/  — openzl vs gzip vs zstd on metrics JSON
+```
 
 ---
 

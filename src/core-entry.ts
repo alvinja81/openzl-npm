@@ -27,17 +27,28 @@ export {
   resolveProfile,
   suggestProfile,
   getProfilesRoot,
+  OpenZLError,
   OpenZLCLINotFoundError,
-  CompressionError
+  CompressionError,
+  DecompressionError,
+  LimitError,
+  isOpenZLError,
+  DEFAULT_MAX_INPUT_BYTES,
+  DEFAULT_MAX_OUTPUT_BYTES,
+  DEFAULT_TIMEOUT_MS
 } from './core/index.js';
 
 export type {
   ContentEncoding,
   CompressionResult,
+  CompressMetrics,
+  OnCompressHook,
   PickEncodingOptions,
   BackendKind,
   CompressOptions,
-  ResolvedProfile
+  DecompressOptions,
+  ResolvedProfile,
+  OpenZLErrorCode
 } from './core/index.js';
 
 export {

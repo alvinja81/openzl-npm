@@ -13,6 +13,8 @@ export type {
   OpenZLMiddlewareOptions,
   ExpressMiddleware,
   CompressionResult,
+  CompressMetrics,
+  OnCompressHook,
   ContentEncoding,
   PickEncodingOptions
 } from './types.js';
@@ -39,11 +41,24 @@ export {
   resolveProfile,
   suggestProfile,
   getProfilesRoot,
+  OpenZLError,
   OpenZLCLINotFoundError,
-  CompressionError
+  CompressionError,
+  DecompressionError,
+  LimitError,
+  isOpenZLError,
+  DEFAULT_MAX_INPUT_BYTES,
+  DEFAULT_MAX_OUTPUT_BYTES,
+  DEFAULT_TIMEOUT_MS
 } from './core/index.js';
 
-export type { BackendKind, CompressOptions, ResolvedProfile } from './core/index.js';
+export type {
+  BackendKind,
+  CompressOptions,
+  DecompressOptions,
+  ResolvedProfile,
+  OpenZLErrorCode
+} from './core/index.js';
 
 export {
   compressWithOpenZL,

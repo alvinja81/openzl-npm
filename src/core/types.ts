@@ -19,6 +19,26 @@ export interface CompressionResult {
 }
 
 /**
+ * Observability payload for middleware / adapter compress hooks.
+ * `ratio` is compressed/original as a percentage (same units as `X-OpenZL-Ratio`).
+ */
+export interface CompressMetrics {
+  encoding: ContentEncoding;
+  /** Compressed size as a percentage of original (lower is better). */
+  ratio: number;
+  /** Wall time of the compress call (ms). */
+  ms: number;
+  bytesIn: number;
+  bytesOut: number;
+  /** OpenZL profile used (when encoding is openzl). */
+  profile?: string;
+  /** Present when openzl failed and another codec was used. */
+  fallbackFrom?: string;
+}
+
+export type OnCompressHook = (metrics: CompressMetrics) => void;
+
+/**
  * Options for {@link pickEncoding}.
  */
 export interface PickEncodingOptions {

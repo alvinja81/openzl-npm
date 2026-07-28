@@ -31,6 +31,7 @@ export type OpenZLFastifyOptions = SharedCodecOptions & {
     payloadBytes: number
   ) => string | undefined;
   onError?: (error: Error, request: FastifyRequest, reply: FastifyReply) => void;
+  /** onCompress is inherited from SharedCodecOptions */
 };
 
 const collectStream = (stream: Readable): Promise<Buffer> =>
@@ -74,7 +75,8 @@ const plugin: FastifyPluginAsync<OpenZLFastifyOptions> = async (
     debug = false,
     filter,
     selectProfile,
-    onError
+    onError,
+    onCompress
   } = options;
 
   const log = (msg: string) => {
@@ -117,6 +119,7 @@ const plugin: FastifyPluginAsync<OpenZLFastifyOptions> = async (
         profile,
         allowZstd,
         zstdLevel,
+        onCompress,
         selectProfile: (size) => selectProfile?.(request, size)
       });
 

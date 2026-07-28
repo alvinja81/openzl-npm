@@ -8,7 +8,9 @@ import {
   compressZstd,
   isZstdAvailable,
   pickEncoding,
-  type ContentEncoding
+  type ContentEncoding,
+  type CompressMetrics,
+  type OnCompressHook
 } from '../core/index.js';
 
 export const DEFAULT_COMPRESSIBLE_TYPE =
@@ -21,6 +23,8 @@ export type SharedCodecOptions = {
   allowZstd?: boolean;
   zstdLevel?: number;
   debug?: boolean;
+  /** Observability: called after a successful (or fallback) compress. */
+  onCompress?: OnCompressHook;
 };
 
 export const isCompressibleType = (contentType: string | undefined | null): boolean => {
@@ -33,6 +37,32 @@ export type CompressBodyResult = {
   encoding: ContentEncoding;
   profile?: string;
   fallbackFrom?: string;
+  /** Wall time of the compress path (ms). */
+  ms?: number;
+};
+
+const emitMetrics = (
+  onCompress: OnCompressHook | undefined,
+  bytesIn: number,
+  result: CompressBodyResult,
+  started: number
+): void => {
+  if (!onCompress || result.encoding === 'identity') return;
+  const ms = result.ms ?? performance.now() - started;
+  const metrics: CompressMetrics = {
+    encoding: result.encoding,
+    ratio: bytesIn > 0 ? (result.body.length / bytesIn) * 100 : 100,
+    ms,
+    bytesIn,
+    bytesOut: result.body.length,
+    profile: result.profile,
+    fallbackFrom: result.fallbackFrom
+  };
+  try {
+    onCompress(metrics);
+  } catch {
+    // never let metrics hooks break the response path
+  }
 };
 
 /**
@@ -51,8 +81,11 @@ export const compressBody = async (
     profile = 'serial',
     allowZstd = isZstdAvailable(),
     zstdLevel,
-    selectProfile
+    selectProfile,
+    onCompress
   } = options;
+
+  const started = performance.now();
 
   if (body.length < threshold) {
     return { body, encoding: 'identity' };
@@ -70,7 +103,14 @@ export const compressBody = async (
     const chosen = selectProfile?.(body.length) ?? profile;
     try {
       const out = await compress(body, { profile: chosen });
-      return { body: out, encoding: 'openzl', profile: chosen };
+      const result: CompressBodyResult = {
+        body: out,
+        encoding: 'openzl',
+        profile: chosen,
+        ms: performance.now() - started
+      };
+      emitMetrics(onCompress, body.length, result, started);
+      return result;
     } catch (err) {
       const next = pickEncoding(acceptEncoding, {
         allowOpenZL: false,
@@ -78,19 +118,25 @@ export const compressBody = async (
       });
       if (next === 'zstd' && isZstdAvailable()) {
         const out = await compressZstd(body, zstdLevel);
-        return {
+        const result: CompressBodyResult = {
           body: out,
           encoding: 'zstd',
-          fallbackFrom: err instanceof Error ? err.name : 'Error'
+          fallbackFrom: err instanceof Error ? err.name : 'Error',
+          ms: performance.now() - started
         };
+        emitMetrics(onCompress, body.length, result, started);
+        return result;
       }
       if (fallbackToGzip && next === 'gzip') {
         const out = await compressGzip(body);
-        return {
+        const result: CompressBodyResult = {
           body: out,
           encoding: 'gzip',
-          fallbackFrom: err instanceof Error ? err.name : 'Error'
+          fallbackFrom: err instanceof Error ? err.name : 'Error',
+          ms: performance.now() - started
         };
+        emitMetrics(onCompress, body.length, result, started);
+        return result;
       }
       // try gzip even if next was identity when fallbackToGzip and client has gzip
       if (
@@ -98,11 +144,14 @@ export const compressBody = async (
         pickEncoding(acceptEncoding, { allowOpenZL: false, allowZstd: false }) === 'gzip'
       ) {
         const out = await compressGzip(body);
-        return {
+        const result: CompressBodyResult = {
           body: out,
           encoding: 'gzip',
-          fallbackFrom: err instanceof Error ? err.name : 'Error'
+          fallbackFrom: err instanceof Error ? err.name : 'Error',
+          ms: performance.now() - started
         };
+        emitMetrics(onCompress, body.length, result, started);
+        return result;
       }
       throw err;
     }
@@ -112,13 +161,34 @@ export const compressBody = async (
     if (!isZstdAvailable()) {
       encoding = pickEncoding(acceptEncoding, { allowZstd: false });
       if (encoding === 'gzip') {
-        return { body: await compressGzip(body), encoding: 'gzip' };
+        const out = await compressGzip(body);
+        const result: CompressBodyResult = {
+          body: out,
+          encoding: 'gzip',
+          ms: performance.now() - started
+        };
+        emitMetrics(onCompress, body.length, result, started);
+        return result;
       }
       return { body, encoding: 'identity' };
     }
-    return { body: await compressZstd(body, zstdLevel), encoding: 'zstd' };
+    const out = await compressZstd(body, zstdLevel);
+    const result: CompressBodyResult = {
+      body: out,
+      encoding: 'zstd',
+      ms: performance.now() - started
+    };
+    emitMetrics(onCompress, body.length, result, started);
+    return result;
   }
 
   // gzip
-  return { body: await compressGzip(body), encoding: 'gzip' };
+  const out = await compressGzip(body);
+  const result: CompressBodyResult = {
+    body: out,
+    encoding: 'gzip',
+    ms: performance.now() - started
+  };
+  emitMetrics(onCompress, body.length, result, started);
+  return result;
 };

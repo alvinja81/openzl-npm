@@ -39,12 +39,36 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
     profile = 'serial',
     selectProfile,
     onError,
+    onCompress,
     debug = false,
     filter,
     preferStreamGzip = true,
     allowZstd = isZstdAvailable(),
     zstdLevel
   } = options;
+
+  const reportCompress = (
+    encoding: ContentEncoding,
+    bytesIn: number,
+    bytesOut: number,
+    ms: number,
+    extra?: { profile?: string; fallbackFrom?: string }
+  ): void => {
+    if (!onCompress || encoding === 'identity') return;
+    try {
+      onCompress({
+        encoding,
+        ratio: bytesIn > 0 ? (bytesOut / bytesIn) * 100 : 100,
+        ms,
+        bytesIn,
+        bytesOut,
+        profile: extra?.profile,
+        fallbackFrom: extra?.fallbackFrom
+      });
+    } catch {
+      // ignore hook errors
+    }
+  };
 
   const log = (message: string) => {
     if (debug) console.log(`[OpenZL] ${message}`);
@@ -85,6 +109,9 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
     let codecStream: Transform | null = null;
     let chunks: Buffer[] = [];
     let length = 0;
+    let streamIn = 0;
+    let streamOut = 0;
+    let streamStarted = 0;
     let ended = false;
     let flushing = false;
 
@@ -121,7 +148,11 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
         return;
       }
       codecStream = stream;
+      streamIn = 0;
+      streamOut = 0;
+      streamStarted = performance.now();
       stream.on('data', (c: Buffer) => {
+        streamOut += c.length;
         originalWrite(c);
       });
       stream.on('error', (err: Error) => {
@@ -129,6 +160,7 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
         if (onError) onError(err, req, res);
       });
       stream.on('end', () => {
+        reportCompress(which, streamIn, streamOut, performance.now() - streamStarted);
         originalEnd();
       });
       log(`${which} streaming started`);
@@ -161,7 +193,11 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
       return mode;
     };
 
-    const fallbackAfterOpenZL = async (body: Buffer, err: Error): Promise<void> => {
+    const fallbackAfterOpenZL = async (
+      body: Buffer,
+      err: Error,
+      started: number
+    ): Promise<void> => {
       // Prefer zstd then gzip when renegotiating without openzl
       const nextEnc = pick(accept, { allowOpenZL: false });
       if (nextEnc === 'zstd' && isZstdAvailable()) {
@@ -171,6 +207,9 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
         res.setHeader('Content-Length', String(out.length));
         res.setHeader('X-Compression-Fallback', 'zstd');
         res.setHeader('X-OpenZL-Error', err.name);
+        reportCompress('zstd', body.length, out.length, performance.now() - started, {
+          fallbackFrom: err.name
+        });
         originalEnd(out);
         ended = true;
         return;
@@ -187,6 +226,9 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
         res.setHeader('Content-Length', String(gz.length));
         res.setHeader('X-Compression-Fallback', 'gzip');
         res.setHeader('X-OpenZL-Error', err.name);
+        reportCompress('gzip', body.length, gz.length, performance.now() - started, {
+          fallbackFrom: err.name
+        });
         originalEnd(gz);
         ended = true;
         return;
@@ -198,6 +240,9 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
         res.setHeader('Content-Length', String(out.length));
         res.setHeader('X-Compression-Fallback', 'zstd');
         res.setHeader('X-OpenZL-Error', err.name);
+        reportCompress('zstd', body.length, out.length, performance.now() - started, {
+          fallbackFrom: err.name
+        });
         originalEnd(out);
         ended = true;
         return;
@@ -230,6 +275,7 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
       if (encoding === 'openzl') {
         const chosen =
           selectProfile?.(req, undefined, body.length) ?? profile ?? 'serial';
+        const started = performance.now();
         try {
           log(`openzl buffer compress ${body.length} bytes profile=${chosen}`);
           const out = await compress(body, { profile: chosen });
@@ -244,6 +290,9 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
           );
           res.setHeader('X-Original-Size', String(body.length));
           res.setHeader('X-Compressed-Size', String(out.length));
+          reportCompress('openzl', body.length, out.length, performance.now() - started, {
+            profile: chosen
+          });
           originalEnd(out);
           ended = true;
         } catch (error) {
@@ -251,17 +300,19 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
           console.error('[OpenZL] Compression failed:', err.message);
           if (onError) onError(err, req, res);
           if (res.headersSent && ended) return;
-          await fallbackAfterOpenZL(body, err);
+          await fallbackAfterOpenZL(body, err, started);
         }
         return;
       }
 
       // zstd/gzip buffer fallback (stream failed to start)
+      const bufStarted = performance.now();
       if (encoding === 'zstd' && isZstdAvailable()) {
         const out = await compressZstd(body, zstdLevel);
         res.removeHeader('Content-Length');
         res.setHeader('Content-Encoding', 'zstd');
         res.setHeader('Content-Length', String(out.length));
+        reportCompress('zstd', body.length, out.length, performance.now() - bufStarted);
         originalEnd(out);
         ended = true;
         return;
@@ -271,6 +322,7 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
       res.removeHeader('Content-Length');
       res.setHeader('Content-Encoding', 'gzip');
       res.setHeader('Content-Length', String(gz.length));
+      reportCompress('gzip', body.length, gz.length, performance.now() - bufStarted);
       originalEnd(gz);
       ended = true;
     };
@@ -292,6 +344,7 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
       }
 
       if (m === 'stream' && codecStream) {
+        streamIn += buf.length;
         return codecStream.write(buf, callback as never);
       }
 

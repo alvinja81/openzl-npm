@@ -17,6 +17,17 @@ This project follows [Semantic Versioning](https://semver.org/) for the `0.x` li
 - Shared `compressBody` helper for adapters.
 - Fastify smoke tests (`scripts/test-fastify.mjs`).
 - Series 2 roadmap (Phases 7–12).
+- **Phase 11 trust:**
+  - Decompress limits: `maxInputBytes`, `maxOutputBytes`, `timeoutMs` (`DecompressOptions`)
+  - Structured errors: `OpenZLError`, `LimitError`, `DecompressionError` + `code`
+  - Metrics: `onCompress({ encoding, ratio, ms, bytesIn, bytesOut })` (Express / Fastify / `compressBody`)
+  - Interop + malformed tests: `scripts/test-trust.mjs`, goldens under `test/fixtures/goldens/`
+  - Compatibility matrix: `docs/COMPAT.md`
+- **Phase 10 browser:** demoted to **experimental** (`docs/BROWSER.md`, `openzl-express/browser` entry warns once).
+- **Phase 12 product:**
+  - Flagship: metrics / time-series JSON (`docs/FLAGSHIP.md`, `examples/flagship-metrics/`, `npm run demo:flagship`)
+  - Train CLI: `npx openzl-train ./samples -o ./my.zlc` (`bin.openzl-train`)
+  - Community: `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, GitHub issue templates
 
 ### Changed
 - Express middleware moved under `src/adapters/express.ts` (root re-export kept).

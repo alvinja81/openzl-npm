@@ -52,9 +52,17 @@ export interface OpenZLMiddlewareOptions {
   /** Custom error handler for compression failures */
   onError?: (error: Error, req: Request, res: Response) => void;
 
+  /**
+   * Observability hook after a successful compress (including fallback codecs).
+   * Not called for identity / below-threshold responses.
+   */
+  onCompress?: import('./core/types.js').OnCompressHook;
+
   /** Enable debug logging (default: false) */
   debug?: boolean;
 }
+
+export type { CompressMetrics, OnCompressHook } from './core/types.js';
 
 /**
  * Express middleware function type.

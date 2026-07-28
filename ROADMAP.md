@@ -8,7 +8,7 @@
 >
 > **Not the goal:** claiming “always better than zstd.” **The goal:** boring install, multi-codec negotiate, sharp wins on shaped data, opt-in clients only.
 
-**Current position:** Series 2 · **Phases 7–9 done** · next Phase 11 (trust) or 12 (product) · package `0.4.0` — **tag release to activate prebuilds**
+**Current position:** Series 2 · **Phases 7–12 done** (Phase 9 still needs **your** tag for prebuilds) · package `0.4.0`
 
 **Status legend:** `[ ]` not started · `[~]` in progress · `[x]` done
 
@@ -209,7 +209,7 @@ npm run pack:smoke
 
 ## Phase 10 — Browser decoder realism
 
-**Status:** `[ ]`  
+**Status:** `[x]`  
 **Size:** ~3–5 sessions  
 **Depends on:** Phase 4 exists; only if web is a real product goal
 
@@ -217,27 +217,32 @@ npm run pack:smoke
 
 Either **make WASM competitive** or **demote browser** to advanced/optional so it doesn’t poison the brand.
 
+### Decision: **demote** (2026-07-28)
+
+1.3 MB + wasm64 is not competitive with browser-native gzip/zstd for a primary product path. Server/Node remains the story.
+
 ### Tasks
 
-- [ ] Decision gate: **ship web as primary** vs **server-only story**
-- [ ] If primary:
+- [x] Decision gate: **ship web as primary** vs **server-only story** → **server-only primary**
+- [ ] If primary: *(deferred until wasm size / wasm32 story improves)*
   - [ ] Decode-only link / DCE — target **&lt;300–500 KB** if possible
   - [ ] wasm32 feasibility research (OpenZL 64-bit assert) or wasm64 browser matrix table
   - [ ] Streaming decode if API allows
   - [ ] CDN-friendly caching headers for wasm
-- [ ] If demote:
-  - [ ] README: browser = experimental; default clients = Node + gzip/zstd
-  - [ ] Move WASM behind `openzl-express/browser` experimental flag only
+- [x] If demote:
+  - [x] README: browser = experimental; default clients = Node + gzip/zstd
+  - [x] WASM behind `openzl-express/browser` experimental entry (`browser/index.js` warns once)
+  - [x] `docs/BROWSER.md` decision record
 
 ### Reach
 
-Honest web story. Today’s 1.3 MB + wasm64 is a **finding**, not a finished product.
+Honest web story. WASM remains available for advanced users; it no longer defines the brand.
 
 ---
 
 ## Phase 11 — Trust: security, interop, observability
 
-**Status:** `[ ]`  
+**Status:** `[x]`  
 **Size:** ~2–3 sessions  
 **Depends on:** Phase 7 (stable encode surface)
 
@@ -247,12 +252,19 @@ Production teams can enable OpenZL without fear.
 
 ### Tasks
 
-- [ ] Decompress limits: max output size, max input size, timeouts
-- [ ] Fuzz or at least corpus of malformed frames (no crash)
-- [ ] Interop goldens: encode with native/CLI → decode with WASM/Node
-- [ ] Version matrix doc: OpenZL submodule rev ↔ frame compatibility
-- [ ] Metrics hook: `onCompress({ encoding, ratio, ms, bytesIn, bytesOut })`
-- [ ] Structured errors (no silent corruption)
+- [x] Decompress limits: max output size, max input size, timeouts
+- [x] Fuzz or at least corpus of malformed frames (no crash)
+- [x] Interop goldens: encode with native/CLI → decode with WASM/Node
+- [x] Version matrix doc: OpenZL submodule rev ↔ frame compatibility
+- [x] Metrics hook: `onCompress({ encoding, ratio, ms, bytesIn, bytesOut })`
+- [x] Structured errors (no silent corruption)
+
+### Delivered
+
+- `DecompressOptions` / `LimitError` / `DecompressionError` / `OpenZLError.code`
+- `onCompress` on Express, Fastify, `compressBody`
+- `scripts/test-trust.mjs` + `test/fixtures/goldens/`
+- `docs/COMPAT.md`
 
 ### Reach
 
@@ -262,7 +274,7 @@ SRE-friendly; closer to how people trust zlib/zstd.
 
 ## Phase 12 — Product & ecosystem
 
-**Status:** `[ ]`  
+**Status:** `[x]` (foundation; naming/comparison site remain optional later)  
 **Size:** ongoing  
 **Depends on:** Phases 7–9 at minimum
 
@@ -272,12 +284,18 @@ One sharp reason to choose this over “just gzip/zstd.”
 
 ### Tasks
 
-- [ ] Pick **flagship use case** (recommend: **metrics / time-series JSON** or **fixed-width binary export**)
-- [ ] One public case study or demo app with before/after vs zstd
-- [ ] Profile training DX: `npx openzl-train ./samples -o ./profiles/my.zlc`
-- [ ] Optional: comparison site using `bench/` harness
-- [ ] Community: issues templates, CODE_OF_CONDUCT, CONTRIBUTING
-- [ ] Consider neutral package naming when ready for broader trust
+- [x] Pick **flagship use case** → **metrics / time-series JSON** (binary exports as runner-up star)
+- [x] One public case study or demo app with before/after vs zstd → `docs/FLAGSHIP.md` + `examples/flagship-metrics/`
+- [x] Profile training DX: `npx openzl-train ./samples -o ./profiles/my.zlc` (`bin.openzl-train`)
+- [ ] Optional: comparison site using `bench/` harness (later)
+- [x] Community: issue templates, CODE_OF_CONDUCT, CONTRIBUTING
+- [ ] Consider neutral package naming when ready for broader trust (later)
+
+### Delivered
+
+- Flagship docs + live demo (`npm run demo:flagship`)
+- `openzl-train` CLI
+- `.github/ISSUE_TEMPLATE/*`, `CODE_OF_CONDUCT.md`, `CONTRIBUTING.md`
 
 ### Reach
 

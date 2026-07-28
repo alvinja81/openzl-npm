@@ -10,10 +10,20 @@
 export type {
   ContentEncoding,
   CompressionResult,
+  CompressMetrics,
+  OnCompressHook,
   PickEncodingOptions
 } from './types.js';
 
-export { OpenZLCLINotFoundError, CompressionError } from './errors.js';
+export {
+  OpenZLError,
+  OpenZLCLINotFoundError,
+  CompressionError,
+  DecompressionError,
+  LimitError,
+  isOpenZLError
+} from './errors.js';
+export type { OpenZLErrorCode } from './errors.js';
 
 export { parseAcceptEncoding, pickEncoding } from './negotiate.js';
 
@@ -31,10 +41,18 @@ export {
   listProfiles,
   resolveProfile,
   suggestProfile,
-  getProfilesRoot
+  getProfilesRoot,
+  DEFAULT_MAX_INPUT_BYTES,
+  DEFAULT_MAX_OUTPUT_BYTES,
+  DEFAULT_TIMEOUT_MS
 } from './engine.js';
 
-export type { BackendKind, CompressOptions, ResolvedProfile } from './engine.js';
+export type {
+  BackendKind,
+  CompressOptions,
+  DecompressOptions,
+  ResolvedProfile
+} from './engine.js';
 
 export { compressGzip, decompressGzip, createGzipStream } from './gzip.js';
 

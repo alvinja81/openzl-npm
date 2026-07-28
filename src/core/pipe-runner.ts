@@ -9,7 +9,7 @@ import { spawn } from 'child_process';
 import fs from 'fs/promises';
 import { tmpdir } from 'os';
 import path from 'path';
-import { CompressionError } from './errors.js';
+import { CompressionError, LimitError } from './errors.js';
 
 export type PipeOp = 'compress' | 'decompress';
 
@@ -84,7 +84,7 @@ export const runZliPipe = (
     };
 
     const timer = setTimeout(() => {
-      fail(new CompressionError(`zli ${op} timed out after ${timeoutMs}ms`));
+      fail(new LimitError('TIMEOUT', `zli ${op} timed out after ${timeoutMs}ms`));
     }, timeoutMs);
 
     const stdoutP = collect(child.stdout!);
@@ -152,7 +152,7 @@ const runZliTempFiles = async (
       child.stderr?.on('data', (c: Buffer) => errChunks.push(c));
       const timer = setTimeout(() => {
         child.kill('SIGKILL');
-        reject(new CompressionError(`zli ${op} timed out after ${options.timeoutMs}ms`));
+        reject(new LimitError('TIMEOUT', `zli ${op} timed out after ${options.timeoutMs}ms`));
       }, options.timeoutMs);
       child.on('error', (err) => {
         clearTimeout(timer);

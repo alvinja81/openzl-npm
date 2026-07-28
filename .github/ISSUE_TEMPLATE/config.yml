@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Compatibility & frame versions
+    url: https://github.com/alvinja81/openzl-npm/blob/main/docs/COMPAT.md
+    about: OpenZL submodule / frame matrix
+  - name: Flagship use case (metrics)
+    url: https://github.com/alvinja81/openzl-npm/blob/main/docs/FLAGSHIP.md
+    about: When to choose OpenZL over gzip/zstd

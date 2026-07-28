@@ -14,7 +14,7 @@ import { ChildProcess, spawn } from 'child_process';
 import { cpus } from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { CompressionError } from './errors.js';
+import { CompressionError, LimitError } from './errors.js';
 import {
   FrameParser,
   OP_COMPRESS,
@@ -265,7 +265,7 @@ export class ZliPool {
         } catch {
           // ignore
         }
-        reject(new CompressionError(`zli job timed out after ${this.timeoutMs}ms`));
+        reject(new LimitError('TIMEOUT', `zli job timed out after ${this.timeoutMs}ms`));
       }
     }, this.timeoutMs);
 
@@ -361,6 +361,8 @@ let sharedPoolBoot: Promise<ZliPool | null> | null = null;
 export type EnsurePoolOptions = {
   zliPath: string;
   size?: number;
+  /** Per-job timeout (ms) for the shared pool. Only applied on first boot. */
+  timeoutMs?: number;
 };
 
 export const ensurePool = async (opts: EnsurePoolOptions): Promise<ZliPool | null> => {
@@ -370,7 +372,11 @@ export const ensurePool = async (opts: EnsurePoolOptions): Promise<ZliPool | nul
   sharedPoolBoot = (async () => {
     const size = opts.size ?? defaultSize();
     if (size === 0) return null;
-    const pool = new ZliPool({ zliPath: opts.zliPath, size });
+    const pool = new ZliPool({
+      zliPath: opts.zliPath,
+      size,
+      timeoutMs: opts.timeoutMs
+    });
     await pool.start();
     if (pool.workerCount === 0) return null;
     sharedPool = pool;
