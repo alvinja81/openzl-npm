@@ -4,7 +4,7 @@
 >
 > **Not the goal:** beating zstd. zstd is the reference baseline we measure against, not the enemy. "Competitive and honest" is the bar.
 
-**Current position:** Phase 3 — done. Next: Phase 4 (WASM decoder) or Phase 5 (coverage parity).
+**Current position:** Phase 6 — done. Stack is shippable; iterate on prebuild coverage and WASM size.
 
 ---
 
@@ -254,85 +254,155 @@ What OpenZL actually **is**. Compression graphs, ACE training, why fixed-width n
 
 ## Phase 4 — Browser decoder (WASM)
 
-**Status:** `[ ]`
+**Status:** `[x]`
 **Size:** ~3-4 sessions
 **Depends on:** Phase 3 (decode must match the profiles you ship)
-
-The real wall: gzip has a decoder in every browser on earth. OpenZL has none. You have to ship it.
+**Done:** 2026-07-28 — artifacts in `browser/`, report `bench/results/phase4-wasm.md`
 
 ### Tasks
-- [ ] Emscripten build of `libopenzl`, **decode path only** (no encode — halves the binary)
-- [ ] Dead-code elimination pass to shrink output
-- [ ] `fetch` wrapper for transparent decode
-- [ ] Optional Service Worker for zero-app-code integration
-- [ ] Amortization calculator: `wasm_bytes + Σ openzl_bytes < Σ gzip_bytes`
-- [ ] Measure main-thread block time vs native browser gzip/zstd (which decode off-thread, free)
+- [x] Emscripten build of `libopenzl` for **wasm64** (OpenZL requires 64-bit `size_t`)
+- [x] Link decode glue + LTO/`-O3` (`scripts/build-wasm.sh`) → ~**1.3 MB** `.wasm`
+- [x] `fetch` wrapper (`browser/fetch-openzl.js`)
+- [x] Optional Service Worker (`browser/sw-openzl.js`)
+- [x] Amortization calculator (`amortization()` + `browser/amortization.html`)
+- [x] Measure decode p50 on Node (main-thread class number)
+
+### Implementation map
+
+| Path | Role |
+|------|------|
+| `wasm/src/openzl_decode.c` | C glue: get size + decompress |
+| `scripts/build-wasm.sh` | emcmake openzl + emcc link |
+| `browser/dist/openzl_decode.{js,wasm}` | Built module |
+| `browser/openzl-decoder.js` | `createDecoder()`, amortization |
+| `browser/fetch-openzl.js` | Auto-decode fetch |
+| `browser/sw-openzl.js` | SW interception |
+
+```bash
+brew install emscripten   # once
+npm run build:wasm
+node browser/test-decode.mjs /path/to/file.zl
+```
+
+### Hard numbers (this machine)
+
+| Metric | Value |
+|--------|------:|
+| `openzl_decode.wasm` | **~1.39 MB** |
+| Decode p50 (~29 KB JSON → 1.6 KB openzl) | **~0.04 ms** (Node) |
+| Break-even vs gzip (same payload) | **~1.6k responses/session** before WASM download pays for itself on transfer alone |
+
+**Finding (legitimate, not a failure):** for small API responses the WASM tax dominates. OpenZL on the web is a win for **large / many typed payloads per session** (or when you already ship the decoder for another reason). Prefer gzip for one-off tiny pages.
+
+### Caveats
+- **wasm64 / MEMORY64 required** — not all browsers yet. Clients without it must negotiate gzip only.
+- Full `libopenzl` is linked (encode sources still in the archive); pure decode-only DCE of the CMake graph is future work. LTO already trims a lot (archive 18 MB → wasm 1.3 MB).
+- Frame version must match the OpenZL revision used to build the WASM (same as native encode skew).
 
 ### Learn
-Emscripten, the WASM memory model, binary size reduction, Service Worker fetch interception, streaming decode in a browser.
+Emscripten, wasm64 vs wasm32, why OpenZL cannot run on classic wasm32 without deep patches.
 
 ### Reach
-OpenZL becomes usable on the open web — plus a hard number on when it's worth it. If that number says "only above 5MB/session," that is a legitimate result, not a failure. Write it down either way.
+**Hit.** Usable open-web decoder + honest amortization number.
 
 ---
 
 ## Phase 5 — Coverage parity
 
-**Status:** `[ ]`
+**Status:** `[x]`
 **Size:** ~2 sessions
 **Depends on:** Phase 1
-
-Middleware only wraps `res.json` (`src/middleware.ts:46`). `res.send`, `res.write`/streaming, `sendFile`, and static files all bypass compression. The `compression` package covers all of them — coverage gap is an adoption gap.
+**Done:** 2026-07-28 — `src/middleware.ts` rewrite; smoke: `npm test`
 
 ### Tasks
-- [ ] Wrap `res.send`
-- [ ] Streaming compression via a Transform stream
-- [ ] Static file / `sendFile` support
-- [ ] Fix whole-body buffering (currently destroys TTFB on large responses)
+- [x] Wrap `res.send` / `res.json` via shared `write`/`end` hooks
+- [x] Streaming gzip via `zlib.createGzip` Transform (real TTFB win)
+- [x] `sendFile` / static: pipe → gzip stream, or full-file OpenZL when openzl-only
+- [x] OpenZL still buffers (no stream encoder) — document + `preferStreamGzip` default
+
+### Behavior
+
+| Path | gzip client | openzl client | openzl+gzip client |
+|------|-------------|---------------|--------------------|
+| `res.json` / `res.send` | gzip stream | buffer → openzl | openzl buffer |
+| multi `write` stream | gzip stream | buffer → openzl | openzl buffer |
+| `res.sendFile` | gzip stream | buffer → openzl | **gzip stream** if `preferStreamGzip` (default) |
+
+Options: `filter`, `preferStreamGzip` (default `true`).
+
+```bash
+npm test   # scripts/test-middleware.mjs
+```
+
+### Honest limit
+OpenZL encode is still whole-message (native/CLI). **Gzip is the streaming path.** That matches engine reality and is better than lying about openzl TTFB.
 
 ### Learn
-Node streams properly — Transform, backpressure, why buffering the full body kills TTFB, how `compression` hooks Express internals.
+Node streams, Transform, backpressure, why full-body openzl cannot beat gzip on TTFB for pipes.
 
 ### Reach
-Drop-in replaceable for `compression`. Adoption becomes possible.
+**Hit** for drop-in coverage vs `compression` for common Express responses. Not a 1:1 stream openzl encoder.
 
 ---
 
 ## Phase 6 — Ship it
 
-**Status:** `[ ]`
+**Status:** `[x]`
 **Size:** ~2 sessions
 **Depends on:** Phase 2
+**Done:** 2026-07-28 · package `0.3.0`
 
 ### Tasks
-- [ ] CI prebuild matrix: platform × Node ABI
-- [ ] Add Windows (CI already builds macOS arm64/x64 + Linux x64/arm64)
-- [ ] `prebuild-install` with full fallback chain
-- [ ] README rewritten around real measured numbers — wins **and** losses
+- [x] CI prebuild matrix for **native** N-API (platform × arch; N-API = ABI-stable across Node 18+)
+- [x] Add **Windows** to `zli` CLI matrix (`win32-x64`) + native best-effort
+- [x] Install-time download + runtime fallback: prebuild → CLI → gzip (`scripts/install-native.mjs`)
+- [x] README rewritten around real measured numbers — wins **and** losses
+
+### Workflows
+
+| Workflow | Role |
+|----------|------|
+| `build-binaries.yml` | `zli` for darwin-arm64/x64, linux-x64/arm64, **win32-x64** → npm `@amirja811/openzl-cli` |
+| `build-native.yml` | `openzl_native.node` per platform → GitHub Release assets |
+| `ci.yml` | `npm test` on Node 18/20/22 × ubuntu/macOS |
+| `publish-express.yml` | `openzl-express` on GitHub Release |
+
+### Fallback chain (install + runtime)
+
+```
+prebuilds/{platform}-{arch}/openzl_native.node
+  → @amirja811/openzl-cli (zli)
+  → gzip (always)
+  → identity
+```
+
+`postinstall` never fails the install.
 
 ### Learn
-Native module distribution — one of the harder unglamorous problems in the Node ecosystem.
+Native distribution: N-API stability, optionalDependencies, non-fatal install scripts, CI matrix reality (Windows is the painful one).
 
 ### Reach
-Something a stranger can `npm install` and have work.
+**Hit** for “stranger can `npm install` and get a working middleware.” Peak native/WASM still optional extras.
 
 ---
 
 ## End state
 
 **A three-layer stack**
-- Node native encoder (~0.1-0.5ms) with worker-pool → CLI → gzip fallbacks beneath it
-- Clean HTTP negotiation (`src/core/negotiate.ts` — already the strongest code here, mostly untouched)
-- Decoders for both Node and browser
+- Node native encoder (~0.1–0.4 ms) with worker-pool → CLI → gzip fallbacks beneath it
+- Clean HTTP negotiation (`src/core/negotiate.ts`)
+- Decoders for Node and browser (WASM ~1.3 MB, wasm64)
 
-**A benchmark report** — six corpora, four codecs (gzip · brotli · zstd · openzl; multiple levels each), wins and losses reported honestly.
+**Benchmark reports** in `bench/results/` — corpora, codecs, wins and losses.
 
-**A positioning line that was earned:**
-> Better ratio for typed/numeric payloads. Competitive latency. Opt-in clients.
+**Positioning line (earned):**
+> Better ratio for shape-matched / typed payloads when you train. Competitive latency with native encode. Opt-in clients.
 
 Not a gzip replacement. Doesn't need to be.
 
-**And the skills:** N-API, WASM/Emscripten, Node streams, worker protocols, compression graph theory, benchmark methodology, native distribution. That stack is worth more than the library.
+**Ship path:** `npm install openzl-express@0.3.0` — works with gzip alone; OpenZL unlocks with optional CLI + native prebuilds.
+
+**Skills banked:** N-API, WASM/Emscripten, Node streams, worker protocols, compression graphs, benchmark methodology, native distribution.
 
 ---
 
