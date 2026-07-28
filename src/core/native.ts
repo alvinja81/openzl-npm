@@ -12,6 +12,8 @@ import { existsSync } from 'fs';
 
 export type NativeOpenZL = {
   compress: (buf: Buffer) => Promise<Buffer>;
+  /** Compress with a deserialized trained compressor (cached in-addon by key). */
+  compressTrained?: (key: string, zlc: Buffer, data: Buffer) => Promise<Buffer>;
   decompress: (buf: Buffer) => Promise<Buffer>;
   compressSync: (buf: Buffer) => Buffer;
   decompressSync: (buf: Buffer) => Buffer;
@@ -22,14 +24,16 @@ export type NativeOpenZL = {
 const require = createRequire(import.meta.url);
 const here = path.dirname(fileURLToPath(import.meta.url));
 
-/** Candidate paths for the compiled .node binary (dev + install layouts). */
+const platformKey = `${process.platform}-${process.arch}`;
+
+/** Candidate paths for the compiled .node binary (prebuild → local build). */
 const CANDIDATES = [
-  // From dist/core → ../../native/build/...
+  // Published / install-native prebuilds
+  path.resolve(here, '../../prebuilds', platformKey, 'openzl_native.node'),
+  path.resolve(process.cwd(), 'prebuilds', platformKey, 'openzl_native.node'),
+  // cmake-js local builds
   path.resolve(here, '../../native/build/Release/openzl_native.node'),
   path.resolve(here, '../../native/build/Debug/openzl_native.node'),
-  // cmake-js sometimes nests by arch
-  path.resolve(here, '../../native/build/Release/openzl_native.node'),
-  // From package root when running ts source
   path.resolve(process.cwd(), 'native/build/Release/openzl_native.node'),
   path.resolve(process.cwd(), 'native/build/Debug/openzl_native.node')
 ];

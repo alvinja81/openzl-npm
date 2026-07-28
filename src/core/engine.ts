@@ -2,13 +2,14 @@
  * OpenZL compress / decompress engine.
  *
  * Fallback chain:
- *   1. Native N-API addon (default serial only — trained .zlc via CLI for now)
+ *   1. Native N-API addon (serial + trained .zlc via in-process deserialize)
  *   2. Persistent worker pool → one-shot native zli over pipes (serial only)
  *   3. One-shot CLI pipe with `-p` / `-c` (any profile)
  *
  * Phase 3: profile is configurable via CompressOptions.
  */
 
+import fs from 'fs/promises';
 import { findZliPath, checkCLIAvailable, resetCLICache as resetPathCache } from './cli-path.js';
 import { runZliPipe } from './pipe-runner.js';
 import { ensurePool, shutdownPool, resetPool } from './pool.js';
@@ -68,6 +69,7 @@ export const resetCLICache = (): void => {
   resetPathCache();
   resetNativeCache();
   resetProfileCache();
+  zlcCache.clear();
   void resetPool();
 };
 
@@ -92,6 +94,13 @@ export const getActiveBackend = async (
   }
 
   if (isDefaultSerial(resolved) && getNative()) return 'native';
+  if (
+    resolved.kind === 'trained' &&
+    resolved.compressorPath &&
+    getNative()?.compressTrained
+  ) {
+    return 'native';
+  }
 
   try {
     const zliPath = await findZliPath();
@@ -105,10 +114,40 @@ export const getActiveBackend = async (
   }
 };
 
+// Cached .zlc bytes per trained-profile name (files are small, immutable assets)
+const zlcCache = new Map<string, Buffer>();
+
+const readZlc = async (name: string, compressorPath: string): Promise<Buffer> => {
+  let zlc = zlcCache.get(name);
+  if (!zlc) {
+    zlc = await fs.readFile(compressorPath);
+    zlcCache.set(name, zlc);
+  }
+  return zlc;
+};
+
 const runCompress = async (buffer: Buffer, options: CompressOptions): Promise<Buffer> => {
   const resolved = resolveProfile(options.profile ?? 'serial');
 
-  // 1. Native — only default serial (trained graphs need matching lib + deserialize)
+  // 1a. Native trained — deserialize .zlc in-process (cached in-addon by name)
+  if (resolved.kind === 'trained' && resolved.compressorPath) {
+    const native = getNative();
+    if (native?.compressTrained) {
+      try {
+        const zlc = await readZlc(resolved.name, resolved.compressorPath);
+        return await native.compressTrained(resolved.name, zlc, buffer);
+      } catch (err) {
+        if (process.env.OPENZL_DEBUG) {
+          console.warn(
+            '[OpenZL] native trained path failed, falling back to CLI:',
+            err instanceof Error ? err.message : err
+          );
+        }
+      }
+    }
+  }
+
+  // 1b. Native — default serial
   if (isDefaultSerial(resolved)) {
     const native = getNative();
     if (native) {
