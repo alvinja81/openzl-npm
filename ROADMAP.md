@@ -8,7 +8,7 @@
 >
 > **Not the goal:** claiming “always better than zstd.” **The goal:** boring install, multi-codec negotiate, sharp wins on shaped data, opt-in clients only.
 
-**Current position:** Series 2 · **Phases 7–8 done** · next **Phase 9** (release hygiene) · package `0.4.0`
+**Current position:** Series 2 · **Phases 7–9 done** · next Phase 11 (trust) or 12 (product) · package `0.4.0` — **tag release to activate prebuilds**
 
 **Status legend:** `[ ]` not started · `[~]` in progress · `[x]` done
 
@@ -172,9 +172,10 @@ src/fastify.ts      → openzl-express/fastify
 
 ## Phase 9 — Install reliability & release hygiene
 
-**Status:** `[ ]`  
+**Status:** `[x]`  
 **Size:** ~2 sessions  
-**Depends on:** Phase 6 workflows exist; prove them in production
+**Depends on:** Phase 6 workflows  
+**Done:** 2026-07-28 — tooling + docs ready; **you still must tag GitHub Release for public prebuilds**
 
 ### Goal
 
@@ -182,19 +183,27 @@ src/fastify.ts      → openzl-express/fastify
 
 ### Tasks
 
-- [ ] Bump `optionalDependencies["@amirja811/openzl-cli"]` to **`^0.3.0`** (or current)
-- [ ] Tag **`v0.3.0` / `v0.4.0`** release; confirm:
-  - [ ] CLI binaries published for all 5 platforms
-  - [ ] Native prebuild assets on GitHub Release
-  - [ ] `install-native.mjs` downloads successfully on clean machine
-- [ ] CI: smoke `npm pack` + install in empty dir on ubuntu/mac/windows
-- [ ] Document exact “works offline / ignore-scripts” behavior
-- [ ] CHANGELOG.md (Keep a Changelog)
-- [ ] `engines` honesty (zstd needs newer Node — document)
+- [x] Bump `optionalDependencies["@amirja811/openzl-cli"]` to **`^0.3.0`**
+- [x] `CHANGELOG.md` (Keep a Changelog) for 0.3.0 / 0.4.0
+- [x] `docs/RELEASE.md` — full tag / verify checklist
+- [x] `scripts/release-check.mjs` — local preflight (`npm run release:check`)
+- [x] `scripts/pack-smoke.mjs` — pack tarball + install in temp dir (`npm run pack:smoke`)
+- [x] CI: pack smoke + release-check on ubuntu/mac; Windows gzip import smoke
+- [x] Document install modes (ignore-scripts, OPENZL_SKIP_NATIVE, engines/zstd) in RELEASE.md + README
+- [ ] **Operator step:** create GitHub Release `v0.4.0` and confirm CI attaches CLI + native assets (cannot automate without your push/tag)
+
+### Commands
+
+```bash
+npm run release:check
+npm run pack:smoke
+# then: git tag -a v0.4.0 -m "v0.4.0" && git push origin main --tags
+# GitHub Release from tag → workflows publish
+```
 
 ### Reach
 
-Stranger on another continent gets a working stack without cloning `facebook/openzl`.
+**Hit for tooling.** Stranger-path is ready once you **push + tag**. Until then, installs work with gzip/zstd; native prebuild download needs a published Release.
 
 ---
 

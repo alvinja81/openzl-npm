@@ -174,9 +174,14 @@ Always keep **gzip** in Accept-Encoding for clients without wasm64.
 
 | Layer | Platforms (CI) | On missing |
 |-------|----------------|------------|
-| `@amirja811/openzl-cli` (`zli`) | darwin-arm64, darwin-x64, linux-x64, linux-arm64, **win32-x64** | gzip only |
-| Native N-API prebuild | same matrix via GitHub Releases | CLI → gzip |
+| `@amirja811/openzl-cli` (`zli`) | darwin-arm64, darwin-x64, linux-x64, linux-arm64, **win32-x64** | zstd/gzip still work |
+| Native N-API prebuild | same matrix via GitHub Releases (`v*`) | CLI → zstd/gzip |
 | WASM browser | build locally / ship `browser/dist` | gzip |
+
+| Feature | Node |
+|---------|------|
+| Install, gzip, Express/Fastify | **≥ 18** |
+| **zstd** via `zlib` | typically **≥ 22.15** (auto-skipped if missing) |
 
 ```bash
 # Optional: local native build
@@ -185,18 +190,22 @@ npm run build:openzl && npm run build:native
 
 # Optional: browser WASM
 npm run build:wasm   # requires emcc
+
+# Before you tag a release
+npm run release:check
+npm run pack:smoke
 ```
 
-Env knobs:
-
-| Variable | Effect |
-|----------|--------|
-| `OPENZL_NATIVE=0` | Force CLI/gzip (ignore addon) |
-| `OPENZL_SKIP_NATIVE=1` | Skip install-time prebuild download |
+| Install mode | Behavior |
+|--------------|----------|
+| Normal `npm i` | `postinstall` tries native prebuild; **never fails** install |
+| `npm i --ignore-scripts` | No download; gzip/zstd work; openzl if prebuild already in tarball |
+| `OPENZL_SKIP_NATIVE=1` | Skip native download |
+| `OPENZL_NATIVE=0` | Runtime ignores native addon |
 | `OPENZL_POOL_SIZE=0` | Disable CLI worker pool |
-| `OPENZL_NATIVE_URL` | Override prebuild download URL |
+| `OPENZL_NATIVE_URL` | Override prebuild URL |
 
-`postinstall` runs `scripts/install-native.mjs` and **never fails** the install.
+Full release steps: [`docs/RELEASE.md`](docs/RELEASE.md).
 
 ---
 

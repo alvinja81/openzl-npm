@@ -15,9 +15,6 @@ import fs from 'fs';
 import path from 'path';
 import https from 'https';
 import http from 'http';
-import { createWriteStream } from 'fs';
-import { pipeline } from 'stream/promises';
-import { createGunzip } from 'zlib';
 import { execSync } from 'child_process';
 import { fileURLToPath } from 'url';
 

@@ -13,6 +13,10 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
         node: [18, 20, 22]
+        # Node 24 optional for zstd coverage on newer runners
+        include:
+          - os: ubuntu-latest
+            node: 24
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -23,18 +27,35 @@ jobs:
         run: npm ci || npm install
       - name: Build TypeScript
         run: npm run build
-      - name: Middleware tests
-        run: node scripts/test-middleware.mjs
-        # OpenZL optional — gzip path always works; openzl cases need zli/native
-        continue-on-error: false
-      - name: Install optional CLI (best effort)
-        run: npm install @amirja811/openzl-cli@^0.2.0 --no-save || true
-      - name: Re-run tests with CLI if present
-        run: node scripts/test-middleware.mjs || true
+      - name: Unit / adapter tests
+        run: |
+          node scripts/test-middleware.mjs
+          node scripts/test-fastify.mjs
+      - name: Release check
+        run: node scripts/release-check.mjs
+      - name: Pack + install smoke
+        run: node scripts/pack-smoke.mjs
 
-  publish-express:
-    if: github.event_name == 'push' && false # enable when ready; use release workflow instead
-    runs-on: ubuntu-latest
-    needs: test
+  test-windows:
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install
+        run: npm ci || npm install
+      - name: Build
+        run: npm run build
+      - name: Gzip path smoke (OpenZL optional on Windows without binary)
+        shell: bash
+        run: |
+          node -e "
+          import('openzl-express').then(async (m) => {
+            const enc = m.pickEncoding('gzip');
+            if (enc !== 'gzip') throw new Error(enc);
+            const gz = await m.compressGzip(Buffer.from('x'.repeat(2000)));
+            if (!gz.length) throw new Error('empty gzip');
+            console.log('windows smoke ok', gz.length);
+          });
+          "

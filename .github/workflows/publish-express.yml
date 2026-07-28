@@ -21,6 +21,8 @@ jobs:
       - run: npm ci || npm install
       - run: npm run build
       - run: npm test
+      - run: node scripts/release-check.mjs
+      - run: node scripts/pack-smoke.mjs
       - name: Publish (trusted)
         id: oidc
         continue-on-error: true

@@ -42,7 +42,9 @@
     "browser/amortization.html",
     "browser/README.md",
     "browser/dist",
-    "wasm/src"
+    "wasm/src",
+    "CHANGELOG.md",
+    "docs/RELEASE.md"
   ],
   "scripts": {
     "build": "tsc",
@@ -55,10 +57,12 @@
     "dev": "nodemon --exec ts-node src/index.ts",
     "test": "npm run build && node scripts/test-middleware.mjs && node scripts/test-fastify.mjs",
     "test:server": "ts-node example/server.ts",
+    "release:check": "npm run build && node scripts/release-check.mjs",
+    "pack:smoke": "npm run build && node scripts/pack-smoke.mjs",
     "bench": "npm run build && node --experimental-strip-types bench/run.ts",
     "bench:quick": "npm run build && node --experimental-strip-types bench/run.ts --quick",
     "bench:full": "npm run build && node --experimental-strip-types bench/run.ts --full",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build && node scripts/release-check.mjs"
   },
   "keywords": [
     "openzl",
