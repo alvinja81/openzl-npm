@@ -6,7 +6,7 @@
 
 | | |
 |---|---|
-| Generated | 2026-07-28T07:49:56.634Z |
+| Generated | 2026-07-28T08:18:19.671Z |
 | Node | v24.11.1 |
 | Platform | darwin/arm64 |
 | Warmup / iterations | 5 / 31 (scaled down for large payloads) |
@@ -30,96 +30,97 @@
 
 | Corpus | Codec | Original | Compressed | Ratio | Enc p50 | Enc p95 | Enc p99 | Dec p50 | Dec p99 | RSS Δ |
 |--------|-------|--------:|-----------:|------:|--------:|--------:|--------:|--------:|--------:|------:|
-| A | brotli L11 | 100.0KB | 3.0KB | 3.0% | 127.8ms | 141.3ms | 144.7ms | 0.125ms | 0.161ms | 0B |
-| A | brotli L4 | 100.0KB | 5.0KB | 5.0% | 0.237ms | 0.250ms | 0.254ms | 0.063ms | 0.071ms | 4.02MB |
-| A | gzip L1 | 100.0KB | 8.9KB | 8.9% | 0.114ms | 0.129ms | 0.133ms | 0.063ms | 0.072ms | 3.98MB |
-| A | gzip L6 | 100.0KB | 6.0KB | 6.0% | 0.347ms | 0.373ms | 0.378ms | 0.048ms | 0.067ms | 0B |
-| A | gzip L9 | 100.0KB | 5.9KB | 5.9% | 0.675ms | 0.705ms | 0.715ms | 0.046ms | 0.053ms | 1.36MB |
-| A | openzl api-list | 100.0KB | 4.7KB | 4.7% | 3.28ms | 3.49ms | 3.51ms | 0.067ms | 0.078ms | 5.92MB |
-| A | openzl serial | 100.0KB | 9.0KB | 9.0% | 0.146ms | 0.169ms | 0.176ms | 0.077ms | 0.091ms | 3.84MB |
-| A | zstd L1 | 100.0KB | 5.2KB | 5.2% | 0.068ms | 0.111ms | 0.126ms | 0.055ms | 0.078ms | 4.31MB |
-| A | zstd L19 | 100.0KB | 3.8KB | 3.8% | 40.85ms | 41.61ms | 41.71ms | 0.112ms | 0.145ms | 85.84MB |
-| A | zstd L3 | 100.0KB | 5.5KB | 5.5% | 0.126ms | 0.156ms | 0.168ms | 0.072ms | 0.094ms | 28.30MB |
-| B | brotli L11 | 100.1KB | 19.7KB | 19.6% | 97.80ms | 100.0ms | 100.3ms | 0.335ms | 0.362ms | 0B |
-| B | brotli L4 | 100.1KB | 25.4KB | 25.4% | 0.771ms | 0.831ms | 0.835ms | 0.189ms | 0.208ms | 928.0KB |
-| B | gzip L1 | 100.1KB | 30.4KB | 30.3% | 0.506ms | 0.549ms | 0.568ms | 0.189ms | 0.216ms | 13.59MB |
-| B | gzip L6 | 100.1KB | 26.3KB | 26.3% | 1.20ms | 1.24ms | 1.25ms | 0.185ms | 0.188ms | 2.33MB |
-| B | gzip L9 | 100.1KB | 25.7KB | 25.6% | 2.80ms | 2.87ms | 2.90ms | 0.186ms | 0.198ms | 720.0KB |
-| B | openzl serial | 100.1KB | 25.6KB | 25.6% | 0.260ms | 0.267ms | 0.271ms | 0.119ms | 0.126ms | 880.0KB |
-| B | openzl timeseries | 100.1KB | 23.9KB | 23.8% | 3.00ms | 3.12ms | 3.14ms | 0.099ms | 0.108ms | 992.0KB |
-| B | zstd L1 | 100.1KB | 23.8KB | 23.8% | 0.190ms | 0.218ms | 0.230ms | 0.101ms | 0.122ms | 15.56MB |
-| B | zstd L19 | 100.1KB | 20.6KB | 20.6% | 19.09ms | 19.59ms | 19.69ms | 0.091ms | 0.114ms | 3.22MB |
-| B | zstd L3 | 100.1KB | 25.9KB | 25.8% | 0.236ms | 0.247ms | 0.248ms | 0.082ms | 0.123ms | 7.92MB |
-| C | brotli L11 | 100.6KB | 1.7KB | 1.7% | 34.13ms | 34.33ms | 34.37ms | 0.041ms | 0.050ms | 0B |
-| C | brotli L4 | 100.6KB | 1.9KB | 1.9% | 0.132ms | 0.135ms | 0.136ms | 0.028ms | 0.029ms | 0B |
-| C | gzip L1 | 100.6KB | 2.9KB | 2.9% | 0.065ms | 0.071ms | 0.072ms | 0.028ms | 0.029ms | 0B |
-| C | gzip L6 | 100.6KB | 2.9KB | 2.9% | 0.233ms | 0.248ms | 0.250ms | 0.028ms | 0.029ms | 0B |
-| C | gzip L9 | 100.6KB | 2.7KB | 2.7% | 0.292ms | 0.303ms | 0.303ms | 0.027ms | 0.029ms | 304.0KB |
-| C | openzl prose | 100.6KB | 2.1KB | 2.1% | 2.98ms | 3.09ms | 3.10ms | 0.043ms | 0.048ms | 192.0KB |
-| C | openzl serial | 100.6KB | 3.5KB | 3.5% | 0.070ms | 0.076ms | 0.080ms | 0.038ms | 0.046ms | 128.0KB |
-| C | zstd L1 | 100.6KB | 1.9KB | 1.9% | 0.028ms | 0.029ms | 0.030ms | 0.022ms | 0.024ms | 96.0KB |
-| C | zstd L19 | 100.6KB | 1.8KB | 1.8% | 15.20ms | 16.00ms | 16.22ms | 0.036ms | 0.071ms | 0B |
-| C | zstd L3 | 100.6KB | 2.0KB | 2.0% | 0.067ms | 0.102ms | 0.105ms | 0.034ms | 0.062ms | 6.64MB |
-| D | brotli L11 | 100.0KB | 21.3KB | 21.3% | 93.60ms | 94.15ms | 94.29ms | 0.296ms | 0.321ms | 368.0KB |
-| D | brotli L4 | 100.0KB | 30.9KB | 30.9% | 0.803ms | 0.835ms | 0.838ms | 0.216ms | 0.223ms | 16.0KB |
-| D | gzip L1 | 100.0KB | 37.3KB | 37.3% | 0.502ms | 0.526ms | 0.534ms | 0.181ms | 0.195ms | 0B |
-| D | gzip L6 | 100.0KB | 32.8KB | 32.8% | 2.30ms | 2.38ms | 2.40ms | 0.181ms | 0.188ms | 0B |
-| D | gzip L9 | 100.0KB | 32.0KB | 32.0% | 11.41ms | 11.51ms | 11.55ms | 0.183ms | 0.195ms | 16.0KB |
-| D | openzl serial | 100.0KB | 33.3KB | 33.3% | 0.365ms | 0.380ms | 0.383ms | 0.182ms | 0.199ms | 0B |
-| D | zstd L1 | 100.0KB | 28.2KB | 28.2% | 0.193ms | 0.220ms | 0.224ms | 0.105ms | 0.122ms | 1.08MB |
-| D | zstd L19 | 100.0KB | 28.0KB | 28.0% | 20.81ms | 20.88ms | 20.90ms | 0.108ms | 0.111ms | 1.44MB |
-| D | zstd L3 | 100.0KB | 32.3KB | 32.3% | 0.276ms | 0.295ms | 0.299ms | 0.101ms | 0.119ms | 1.66MB |
-| E-100kb | brotli L11 | 100.0KB | 3.0KB | 3.0% | 122.6ms | 124.5ms | 124.8ms | 0.075ms | 0.117ms | 0B |
-| E-100kb | brotli L4 | 100.0KB | 5.0KB | 5.0% | 0.232ms | 0.242ms | 0.245ms | 0.051ms | 0.054ms | 0B |
-| E-100kb | gzip L1 | 100.0KB | 8.9KB | 8.9% | 0.105ms | 0.106ms | 0.106ms | 0.049ms | 0.049ms | 0B |
-| E-100kb | gzip L6 | 100.0KB | 6.0KB | 6.0% | 0.337ms | 0.359ms | 0.360ms | 0.038ms | 0.040ms | 0B |
-| E-100kb | gzip L9 | 100.0KB | 5.9KB | 5.9% | 0.674ms | 0.704ms | 0.705ms | 0.039ms | 0.040ms | 0B |
-| E-100kb | openzl api-list | 100.0KB | 4.7KB | 4.7% | 3.19ms | 3.34ms | 3.36ms | 0.051ms | 0.060ms | 32.0KB |
-| E-100kb | openzl serial | 100.0KB | 9.0KB | 9.0% | 0.137ms | 0.147ms | 0.149ms | 0.069ms | 0.084ms | 80.0KB |
-| E-100kb | zstd L1 | 100.0KB | 5.2KB | 5.2% | 0.058ms | 0.059ms | 0.060ms | 0.039ms | 0.042ms | 0B |
-| E-100kb | zstd L19 | 100.0KB | 3.8KB | 3.8% | 38.17ms | 40.18ms | 40.63ms | 0.043ms | 0.059ms | 2.45MB |
-| E-100kb | zstd L3 | 100.0KB | 5.5KB | 5.5% | 0.083ms | 0.156ms | 0.172ms | 0.045ms | 0.063ms | 2.06MB |
-| E-10kb | brotli L11 | 10.1KB | 630B | 6.1% | 11.20ms | 11.24ms | 11.26ms | 0.015ms | 0.018ms | 0B |
-| E-10kb | brotli L4 | 10.1KB | 821B | 7.9% | 0.039ms | 0.045ms | 0.045ms | 9.5µs | 0.010ms | 0B |
-| E-10kb | gzip L1 | 10.1KB | 1.2KB | 11.5% | 0.019ms | 0.019ms | 0.019ms | 8.2µs | 8.3µs | 0B |
-| E-10kb | gzip L6 | 10.1KB | 980B | 9.5% | 0.041ms | 0.042ms | 0.042ms | 7.3µs | 8.4µs | 0B |
-| E-10kb | gzip L9 | 10.1KB | 911B | 8.8% | 0.048ms | 0.049ms | 0.049ms | 7.1µs | 8.0µs | 0B |
-| E-10kb | openzl api-list | 10.1KB | 791B | 7.6% | 2.58ms | 2.65ms | 2.65ms | 0.029ms | 0.033ms | 240.0KB |
-| E-10kb | openzl serial | 10.1KB | 1.4KB | 13.7% | 0.039ms | 0.041ms | 0.042ms | 0.020ms | 0.025ms | 448.0KB |
-| E-10kb | zstd L1 | 10.1KB | 836B | 8.1% | 0.015ms | 0.016ms | 0.016ms | 7.3µs | 7.6µs | 0B |
-| E-10kb | zstd L19 | 10.1KB | 715B | 6.9% | 2.63ms | 2.66ms | 2.67ms | 7.5µs | 8.0µs | 0B |
-| E-10kb | zstd L3 | 10.1KB | 853B | 8.2% | 0.017ms | 0.017ms | 0.017ms | 7.4µs | 7.7µs | 0B |
-| E-1kb | brotli L11 | 1.1KB | 265B | 24.0% | 1.27ms | 1.29ms | 1.29ms | 7.9µs | 0.010ms | 0B |
-| E-1kb | brotli L4 | 1.1KB | 303B | 27.4% | 0.019ms | 0.019ms | 0.020ms | 5.1µs | 5.4µs | 0B |
-| E-1kb | gzip L1 | 1.1KB | 344B | 31.1% | 0.012ms | 0.012ms | 0.013ms | 4.5µs | 4.7µs | 0B |
-| E-1kb | gzip L6 | 1.1KB | 332B | 30.0% | 0.014ms | 0.016ms | 0.016ms | 4.5µs | 5.0µs | 16.0KB |
-| E-1kb | gzip L9 | 1.1KB | 332B | 30.0% | 0.013ms | 0.014ms | 0.014ms | 4.3µs | 4.8µs | 0B |
-| E-1kb | openzl api-list | 1.1KB | 348B | 31.5% | 2.42ms | 2.51ms | 2.52ms | 0.018ms | 0.020ms | 0B |
-| E-1kb | openzl serial | 1.1KB | 447B | 40.4% | 0.023ms | 0.024ms | 0.025ms | 0.011ms | 0.012ms | 48.0KB |
-| E-1kb | zstd L1 | 1.1KB | 332B | 30.0% | 8.4µs | 9.2µs | 9.2µs | 4.3µs | 4.8µs | 0B |
-| E-1kb | zstd L19 | 1.1KB | 318B | 28.8% | 0.129ms | 0.129ms | 0.130ms | 4.6µs | 4.8µs | 0B |
-| E-1kb | zstd L3 | 1.1KB | 328B | 29.7% | 8.7µs | 9.9µs | 0.010ms | 4.3µs | 5.0µs | 0B |
-| E-1mb | brotli L11 | 1.00MB | 12.1KB | 1.2% | 1563.9ms | 1573.5ms | 1574.8ms | 0.399ms | 0.414ms | 0B |
-| E-1mb | brotli L4 | 1.00MB | 31.5KB | 3.1% | 1.89ms | 1.94ms | 1.94ms | 0.358ms | 0.395ms | 0B |
-| E-1mb | gzip L1 | 1.00MB | 87.1KB | 8.5% | 1.16ms | 1.17ms | 1.17ms | 0.486ms | 0.527ms | 0B |
-| E-1mb | gzip L6 | 1.00MB | 54.8KB | 5.3% | 3.57ms | 3.63ms | 3.63ms | 0.326ms | 0.338ms | 0B |
-| E-1mb | gzip L9 | 1.00MB | 52.7KB | 5.2% | 7.60ms | 7.70ms | 7.72ms | 0.309ms | 0.329ms | 48.0KB |
-| E-1mb | openzl api-list | 1.00MB | 22.5KB | 2.2% | 8.61ms | 8.73ms | 8.77ms | 0.241ms | 0.256ms | 112.0KB |
-| E-1mb | openzl serial | 1.00MB | 80.1KB | 7.8% | 1.11ms | 1.14ms | 1.14ms | 0.682ms | 0.730ms | 256.0KB |
-| E-1mb | zstd L1 | 1.00MB | 20.9KB | 2.0% | 0.365ms | 0.381ms | 0.382ms | 0.245ms | 0.283ms | 720.0KB |
-| E-1mb | zstd L19 | 1.00MB | 14.7KB | 1.4% | 527.2ms | 528.9ms | 529.1ms | 0.288ms | 0.382ms | 334.89MB |
-| E-1mb | zstd L3 | 1.00MB | 27.1KB | 2.7% | 0.437ms | 0.444ms | 0.445ms | 0.280ms | 0.354ms | 576.0KB |
-| F | brotli L11 | 100.0KB | 33.2KB | 33.2% | 246.1ms | 246.5ms | 246.6ms | 0.554ms | 0.591ms | 0B |
-| F | brotli L4 | 100.0KB | 48.5KB | 48.5% | 1.49ms | 1.52ms | 1.53ms | 0.391ms | 0.407ms | 0B |
-| F | gzip L1 | 100.0KB | 63.8KB | 63.8% | 1.16ms | 1.19ms | 1.19ms | 0.269ms | 0.272ms | 0B |
-| F | gzip L6 | 100.0KB | 62.9KB | 62.9% | 2.99ms | 3.02ms | 3.03ms | 0.269ms | 0.270ms | 0B |
-| F | gzip L9 | 100.0KB | 62.9KB | 62.9% | 4.14ms | 4.17ms | 4.18ms | 0.269ms | 0.275ms | 0B |
-| F | openzl binary | 100.0KB | 13.8KB | 13.8% | 3.62ms | 3.82ms | 3.83ms | 0.107ms | 0.120ms | 848.0KB |
-| F | openzl binary le-u32 | 100.0KB | 7.5KB | 7.5% | 4.61ms | 4.67ms | 4.68ms | 0.104ms | 0.108ms | 320.0KB |
-| F | openzl serial | 100.0KB | 64.7KB | 64.7% | 0.146ms | 0.164ms | 0.168ms | 0.106ms | 0.117ms | 0B |
-| F | zstd L1 | 100.0KB | 47.7KB | 47.7% | 0.210ms | 0.215ms | 0.218ms | 0.118ms | 0.124ms | 256.0KB |
-| F | zstd L19 | 100.0KB | 51.3KB | 51.3% | 12.86ms | 12.93ms | 12.97ms | 0.145ms | 0.156ms | 68.61MB |
-| F | zstd L3 | 100.0KB | 52.5KB | 52.5% | 0.295ms | 0.304ms | 0.307ms | 0.115ms | 0.143ms | 128.0KB |
+| A | brotli L11 | 100.0KB | 3.0KB | 3.0% | 122.2ms | 123.3ms | 123.5ms | 0.113ms | 0.161ms | 3.97MB |
+| A | brotli L4 | 100.0KB | 5.0KB | 5.0% | 0.238ms | 0.253ms | 0.254ms | 0.062ms | 0.067ms | 3.97MB |
+| A | gzip L1 | 100.0KB | 8.9KB | 8.9% | 0.113ms | 0.124ms | 0.126ms | 0.062ms | 0.069ms | 3.98MB |
+| A | gzip L6 | 100.0KB | 6.0KB | 6.0% | 0.338ms | 0.346ms | 0.350ms | 0.042ms | 0.061ms | 80.0KB |
+| A | gzip L9 | 100.0KB | 5.9KB | 5.9% | 0.671ms | 0.700ms | 0.704ms | 0.048ms | 0.056ms | 4.00MB |
+| A | openzl api-list | 100.0KB | 4.7KB | 4.7% | 0.301ms | 0.391ms | 0.401ms | 0.042ms | 0.053ms | 2.52MB |
+| A | openzl serial | 100.0KB | 9.0KB | 9.0% | 0.197ms | 0.680ms | 0.752ms | 0.102ms | 0.397ms | 2.77MB |
+| A | zstd L1 | 100.0KB | 5.2KB | 5.2% | 0.064ms | 0.070ms | 0.071ms | 0.051ms | 0.058ms | 4.05MB |
+| A | zstd L19 | 100.0KB | 3.8KB | 3.8% | 39.72ms | 43.17ms | 44.04ms | 0.116ms | 0.176ms | 87.05MB |
+| A | zstd L3 | 100.0KB | 5.5KB | 5.5% | 0.140ms | 0.184ms | 0.200ms | 0.074ms | 0.109ms | 28.80MB |
+| B | brotli L11 | 100.1KB | 19.7KB | 19.6% | 97.39ms | 108.2ms | 110.1ms | 0.322ms | 0.376ms | 0B |
+| B | brotli L4 | 100.1KB | 25.4KB | 25.4% | 0.764ms | 0.785ms | 0.789ms | 0.185ms | 0.189ms | 3.19MB |
+| B | gzip L1 | 100.1KB | 30.4KB | 30.3% | 0.548ms | 0.654ms | 0.660ms | 0.209ms | 0.249ms | 16.0KB |
+| B | gzip L6 | 100.1KB | 26.3KB | 26.3% | 1.25ms | 1.45ms | 1.47ms | 0.187ms | 0.233ms | 16.0KB |
+| B | gzip L9 | 100.1KB | 25.7KB | 25.6% | 2.71ms | 2.74ms | 2.76ms | 0.183ms | 0.196ms | 224.0KB |
+| B | openzl serial | 100.1KB | 25.6KB | 25.6% | 0.261ms | 0.278ms | 0.280ms | 0.128ms | 0.141ms | 880.0KB |
+| B | openzl timeseries | 100.1KB | 23.9KB | 23.8% | 0.174ms | 0.185ms | 0.188ms | 0.084ms | 0.093ms | 880.0KB |
+| B | zstd L1 | 100.1KB | 23.8KB | 23.8% | 0.180ms | 0.238ms | 0.243ms | 0.095ms | 0.117ms | 8.08MB |
+| B | zstd L19 | 100.1KB | 20.6KB | 20.6% | 18.96ms | 19.81ms | 20.22ms | 0.084ms | 0.113ms | 1.91MB |
+| B | zstd L3 | 100.1KB | 25.9KB | 25.8% | 0.297ms | 0.370ms | 0.403ms | 0.111ms | 0.164ms | 448.0KB |
+| C | brotli L11 | 100.6KB | 1.7KB | 1.7% | 33.95ms | 34.20ms | 34.31ms | 0.044ms | 0.064ms | 16.0KB |
+| C | brotli L4 | 100.6KB | 1.9KB | 1.9% | 0.133ms | 0.141ms | 0.141ms | 0.026ms | 0.027ms | 0B |
+| C | gzip L1 | 100.6KB | 2.9KB | 2.9% | 0.063ms | 0.066ms | 0.066ms | 0.027ms | 0.028ms | 16.0KB |
+| C | gzip L6 | 100.6KB | 2.9KB | 2.9% | 0.233ms | 0.249ms | 0.252ms | 0.027ms | 0.029ms | 0B |
+| C | gzip L9 | 100.6KB | 2.7KB | 2.7% | 0.293ms | 0.299ms | 0.300ms | 0.027ms | 0.028ms | 0B |
+| C | openzl prose | 100.6KB | 2.1KB | 2.1% | 0.100ms | 0.106ms | 0.108ms | 0.029ms | 0.037ms | 112.0KB |
+| C | openzl serial | 100.6KB | 3.5KB | 3.5% | 0.068ms | 0.076ms | 0.077ms | 0.038ms | 0.046ms | 128.0KB |
+| C | zstd L1 | 100.6KB | 1.9KB | 1.9% | 0.028ms | 0.036ms | 0.037ms | 0.023ms | 0.035ms | 576.0KB |
+| C | zstd L19 | 100.6KB | 1.8KB | 1.8% | 14.98ms | 15.15ms | 15.19ms | 0.034ms | 0.050ms | 5.31MB |
+| C | zstd L3 | 100.6KB | 2.0KB | 2.0% | 0.057ms | 0.074ms | 0.078ms | 0.029ms | 0.041ms | 2.11MB |
+| D | brotli L11 | 100.0KB | 21.3KB | 21.3% | 100.5ms | 110.2ms | 110.6ms | 0.323ms | 0.400ms | 16.0KB |
+| D | brotli L4 | 100.0KB | 30.9KB | 30.9% | 0.809ms | 0.892ms | 0.902ms | 0.215ms | 0.236ms | 0B |
+| D | gzip L1 | 100.0KB | 37.3KB | 37.3% | 0.493ms | 0.494ms | 0.496ms | 0.180ms | 0.184ms | 0B |
+| D | gzip L6 | 100.0KB | 32.8KB | 32.8% | 2.25ms | 2.28ms | 2.28ms | 0.178ms | 0.180ms | 16.0KB |
+| D | gzip L9 | 100.0KB | 32.0KB | 32.0% | 11.35ms | 11.48ms | 11.50ms | 0.180ms | 0.185ms | 0B |
+| D | openzl serial | 100.0KB | 33.3KB | 33.3% | 0.369ms | 0.373ms | 0.376ms | 0.184ms | 0.187ms | 0B |
+| D | zstd L1 | 100.0KB | 28.2KB | 28.2% | 0.211ms | 0.238ms | 0.239ms | 0.116ms | 0.158ms | 1.05MB |
+| D | zstd L19 | 100.0KB | 28.0KB | 28.0% | 20.88ms | 21.09ms | 21.14ms | 0.109ms | 0.115ms | 1.94MB |
+| D | zstd L3 | 100.0KB | 32.3KB | 32.3% | 0.305ms | 0.357ms | 0.375ms | 0.108ms | 0.128ms | 224.0KB |
+| E-100kb | brotli L11 | 100.0KB | 3.0KB | 3.0% | 123.6ms | 127.3ms | 127.8ms | 0.099ms | 0.123ms | 16.0KB |
+| E-100kb | brotli L4 | 100.0KB | 5.0KB | 5.0% | 0.231ms | 0.234ms | 0.236ms | 0.053ms | 0.053ms | 0B |
+| E-100kb | gzip L1 | 100.0KB | 8.9KB | 8.9% | 0.115ms | 0.116ms | 0.117ms | 0.051ms | 0.053ms | 0B |
+| E-100kb | gzip L6 | 100.0KB | 6.0KB | 6.0% | 0.336ms | 0.338ms | 0.338ms | 0.038ms | 0.039ms | 0B |
+| E-100kb | gzip L9 | 100.0KB | 5.9KB | 5.9% | 0.668ms | 0.672ms | 0.672ms | 0.038ms | 0.039ms | 0B |
+| E-100kb | openzl api-list | 100.0KB | 4.7KB | 4.7% | 0.266ms | 0.276ms | 0.281ms | 0.043ms | 0.052ms | 0B |
+| E-100kb | openzl serial | 100.0KB | 9.0KB | 9.0% | 0.134ms | 0.139ms | 0.142ms | 0.073ms | 0.086ms | 80.0KB |
+| E-100kb | zstd L1 | 100.0KB | 5.2KB | 5.2% | 0.055ms | 0.057ms | 0.057ms | 0.037ms | 0.038ms | 0B |
+| E-100kb | zstd L19 | 100.0KB | 3.8KB | 3.8% | 38.16ms | 38.46ms | 38.53ms | 0.044ms | 0.058ms | 256.0KB |
+| E-100kb | zstd L3 | 100.0KB | 5.5KB | 5.5% | 0.064ms | 0.067ms | 0.068ms | 0.036ms | 0.041ms | 112.0KB |
+| E-10kb | brotli L11 | 10.1KB | 630B | 6.1% | 11.18ms | 11.82ms | 12.05ms | 0.016ms | 0.036ms | 0B |
+| E-10kb | brotli L4 | 10.1KB | 821B | 7.9% | 0.041ms | 0.044ms | 0.044ms | 9.8µs | 0.011ms | 0B |
+| E-10kb | gzip L1 | 10.1KB | 1.2KB | 11.5% | 0.019ms | 0.020ms | 0.020ms | 8.2µs | 8.6µs | 0B |
+| E-10kb | gzip L6 | 10.1KB | 980B | 9.5% | 0.041ms | 0.042ms | 0.043ms | 7.3µs | 7.6µs | 0B |
+| E-10kb | gzip L9 | 10.1KB | 911B | 8.8% | 0.049ms | 0.050ms | 0.050ms | 7.2µs | 7.5µs | 0B |
+| E-10kb | openzl api-list | 10.1KB | 791B | 7.6% | 0.052ms | 0.054ms | 0.054ms | 0.019ms | 0.021ms | 416.0KB |
+| E-10kb | openzl serial | 10.1KB | 1.4KB | 13.7% | 0.038ms | 0.042ms | 0.043ms | 0.019ms | 0.021ms | 448.0KB |
+| E-10kb | zstd L1 | 10.1KB | 836B | 8.1% | 0.015ms | 0.016ms | 0.016ms | 7.3µs | 7.9µs | 0B |
+| E-10kb | zstd L19 | 10.1KB | 715B | 6.9% | 2.62ms | 2.65ms | 2.66ms | 7.4µs | 8.6µs | 0B |
+| E-10kb | zstd L3 | 10.1KB | 853B | 8.2% | 0.017ms | 0.018ms | 0.018ms | 7.5µs | 7.8µs | 0B |
+| E-1kb | brotli L11 | 1.1KB | 265B | 24.0% | 1.25ms | 1.27ms | 1.28ms | 7.7µs | 7.9µs | 0B |
+| E-1kb | brotli L4 | 1.1KB | 303B | 27.4% | 0.019ms | 0.020ms | 0.020ms | 5.1µs | 5.8µs | 0B |
+| E-1kb | gzip L1 | 1.1KB | 344B | 31.1% | 0.012ms | 0.012ms | 0.012ms | 4.7µs | 5.4µs | 0B |
+| E-1kb | gzip L6 | 1.1KB | 332B | 30.0% | 0.014ms | 0.016ms | 0.016ms | 4.5µs | 5.1µs | 16.0KB |
+| E-1kb | gzip L9 | 1.1KB | 332B | 30.0% | 0.014ms | 0.014ms | 0.014ms | 4.4µs | 4.8µs | 0B |
+| E-1kb | openzl api-list | 1.1KB | 348B | 31.5% | 0.019ms | 0.020ms | 0.021ms | 0.011ms | 0.012ms | 48.0KB |
+| E-1kb | openzl serial | 1.1KB | 447B | 40.4% | 0.023ms | 0.025ms | 0.025ms | 0.011ms | 0.013ms | 16.0KB |
+| E-1kb | zstd L1 | 1.1KB | 332B | 30.0% | 8.4µs | 8.8µs | 8.9µs | 4.4µs | 4.9µs | 0B |
+| E-1kb | zstd L19 | 1.1KB | 318B | 28.8% | 0.129ms | 0.130ms | 0.130ms | 4.5µs | 4.8µs | 0B |
+| E-1kb | zstd L3 | 1.1KB | 328B | 29.7% | 9.2µs | 9.6µs | 9.6µs | 4.6µs | 5.0µs | 0B |
+| E-1mb | brotli L11 | 1.00MB | 12.1KB | 1.2% | 1594.2ms | 1695.0ms | 1714.7ms | 0.410ms | 0.432ms | 0B |
+| E-1mb | brotli L4 | 1.00MB | 31.5KB | 3.1% | 1.87ms | 1.90ms | 1.90ms | 0.358ms | 0.363ms | 0B |
+| E-1mb | gzip L1 | 1.00MB | 87.1KB | 8.5% | 1.17ms | 1.19ms | 1.20ms | 0.490ms | 0.506ms | 32.0KB |
+| E-1mb | gzip L6 | 1.00MB | 54.8KB | 5.3% | 3.51ms | 3.59ms | 3.59ms | 0.324ms | 0.326ms | 0B |
+| E-1mb | gzip L9 | 1.00MB | 52.7KB | 5.2% | 7.55ms | 7.63ms | 7.66ms | 0.313ms | 0.321ms | 48.0KB |
+| E-1mb | openzl api-list | 1.00MB | 22.5KB | 2.2% | 2.23ms | 2.27ms | 2.28ms | 0.252ms | 0.304ms | 256.0KB |
+| E-1mb | openzl serial | 1.00MB | 80.1KB | 7.8% | 1.12ms | 1.16ms | 1.17ms | 0.686ms | 0.813ms | 3.00MB |
+| E-1mb | zstd L1 | 1.00MB | 20.9KB | 2.0% | 0.404ms | 0.426ms | 0.426ms | 0.350ms | 0.416ms | 4.34MB |
+| E-1mb | zstd L19 | 1.00MB | 14.7KB | 1.4% | 544.6ms | 563.6ms | 567.3ms | 0.333ms | 0.500ms | 279.23MB |
+| E-1mb | zstd L3 | 1.00MB | 27.1KB | 2.7% | 0.584ms | 0.791ms | 0.813ms | 0.416ms | 0.480ms | 5.27MB |
+| F | brotli L11 | 100.0KB | 33.2KB | 33.2% | 246.6ms | 248.5ms | 248.7ms | 0.520ms | 0.553ms | 0B |
+| F | brotli L4 | 100.0KB | 48.5KB | 48.5% | 1.48ms | 1.52ms | 1.52ms | 0.384ms | 0.401ms | 0B |
+| F | gzip L1 | 100.0KB | 63.8KB | 63.8% | 1.18ms | 1.25ms | 1.25ms | 0.271ms | 0.287ms | 272.0KB |
+| F | gzip L6 | 100.0KB | 62.9KB | 62.9% | 2.99ms | 3.03ms | 3.05ms | 0.268ms | 0.271ms | 0B |
+| F | gzip L9 | 100.0KB | 62.9KB | 62.9% | 4.13ms | 4.17ms | 4.17ms | 0.269ms | 0.273ms | 0B |
+| F | openzl binary | 100.0KB | 13.8KB | 13.8% | 0.615ms | 0.645ms | 0.651ms | 0.099ms | 0.105ms | 576.0KB |
+| F | openzl binary le-u32 | 100.0KB | 7.5KB | 7.5% | 1.50ms | 1.56ms | 1.56ms | 0.098ms | 0.104ms | 464.0KB |
+| F | openzl binary sddl | 100.0KB | 6.4KB | 6.4% | 0.728ms | 0.744ms | 0.752ms | 0.122ms | 0.129ms | 128.0KB |
+| F | openzl serial | 100.0KB | 64.7KB | 64.7% | 0.142ms | 0.150ms | 0.150ms | 0.105ms | 0.110ms | 0B |
+| F | zstd L1 | 100.0KB | 47.7KB | 47.7% | 0.186ms | 0.190ms | 0.195ms | 0.103ms | 0.115ms | 272.0KB |
+| F | zstd L19 | 100.0KB | 51.3KB | 51.3% | 12.96ms | 13.11ms | 13.15ms | 0.144ms | 0.156ms | 39.58MB |
+| F | zstd L3 | 100.0KB | 52.5KB | 52.5% | 0.319ms | 0.391ms | 0.417ms | 0.119ms | 0.140ms | 752.0KB |
 
 ## Encode latency vs zstd L3 (same corpus)
 
@@ -127,15 +128,15 @@ Positive = slower than zstd L3. This is the honesty check for OpenZL serial toda
 
 | Corpus | openzl serial enc p50 | zstd L3 enc p50 | Δ | ratio openzl | ratio zstd L3 |
 |--------|----------------------:|----------------:|--:|-------------:|--------------:|
-| A | 0.146ms | 0.126ms | +0.020ms | 9.0% | 5.5% |
-| B | 0.260ms | 0.236ms | +0.024ms | 25.6% | 25.8% |
-| C | 0.070ms | 0.067ms | +2.8µs | 3.5% | 2.0% |
-| D | 0.365ms | 0.276ms | +0.089ms | 33.3% | 32.3% |
-| E-1kb | 0.023ms | 8.7µs | +0.014ms | 40.4% | 29.7% |
-| E-10kb | 0.039ms | 0.017ms | +0.023ms | 13.7% | 8.2% |
-| E-100kb | 0.137ms | 0.083ms | +0.054ms | 9.0% | 5.5% |
-| E-1mb | 1.11ms | 0.437ms | +0.672ms | 7.8% | 2.7% |
-| F | 0.146ms | 0.295ms | -148.8µs | 64.7% | 52.5% |
+| A | 0.197ms | 0.140ms | +0.057ms | 9.0% | 5.5% |
+| B | 0.261ms | 0.297ms | -36.0µs | 25.6% | 25.8% |
+| C | 0.068ms | 0.057ms | +0.012ms | 3.5% | 2.0% |
+| D | 0.369ms | 0.305ms | +0.064ms | 33.3% | 32.3% |
+| E-1kb | 0.023ms | 9.2µs | +0.014ms | 40.4% | 29.7% |
+| E-10kb | 0.038ms | 0.017ms | +0.021ms | 13.7% | 8.2% |
+| E-100kb | 0.134ms | 0.064ms | +0.070ms | 9.0% | 5.5% |
+| E-1mb | 1.12ms | 0.584ms | +0.540ms | 7.8% | 2.7% |
+| F | 0.142ms | 0.319ms | -177.2µs | 64.7% | 52.5% |
 
 ## Size sweep crossover (corpus E, encode p50)
 
@@ -143,30 +144,30 @@ When encode cost exceeds transfer savings, compression loses. Chart is log-ish A
 
 | Size | gzip-1 | gzip-6 | gzip-9 | brotli-4 | brotli-11 | zstd-1 | zstd-3 | zstd-19 | openzl-serial | openzl-api-list |
 |------|------:|------:|------:|------:|------:|------:|------:|------:|------:|------:|
-| E-1kb | 0.012ms | 0.014ms | 0.013ms | 0.019ms | 1.27ms | 8.4µs | 8.7µs | 0.129ms | 0.023ms | 2.42ms |
-| E-10kb | 0.019ms | 0.041ms | 0.048ms | 0.039ms | 11.20ms | 0.015ms | 0.017ms | 2.63ms | 0.039ms | 2.58ms |
-| E-100kb | 0.105ms | 0.337ms | 0.674ms | 0.232ms | 122.6ms | 0.058ms | 0.083ms | 38.17ms | 0.137ms | 3.19ms |
-| E-1mb | 1.16ms | 3.57ms | 7.60ms | 1.89ms | 1563.9ms | 0.365ms | 0.437ms | 527.2ms | 1.11ms | 8.61ms |
+| E-1kb | 0.012ms | 0.014ms | 0.014ms | 0.019ms | 1.25ms | 8.4µs | 9.2µs | 0.129ms | 0.023ms | 0.019ms |
+| E-10kb | 0.019ms | 0.041ms | 0.049ms | 0.041ms | 11.18ms | 0.015ms | 0.017ms | 2.62ms | 0.038ms | 0.052ms |
+| E-100kb | 0.115ms | 0.336ms | 0.668ms | 0.231ms | 123.6ms | 0.055ms | 0.064ms | 38.16ms | 0.134ms | 0.266ms |
+| E-1mb | 1.17ms | 3.51ms | 7.55ms | 1.87ms | 1594.2ms | 0.404ms | 0.584ms | 544.6ms | 1.12ms | 2.23ms |
 
 ### Encode p50 (relative bar, per size)
 
 ```
 E-1kb
   openzl-serial  ████████████████████████████████████████ 0.023ms
-  zstd-3         ███████████████ 8.7µs
+  zstd-3         ████████████████ 9.2µs
   gzip-6         ████████████████████████ 0.014ms
 E-10kb
-  openzl-serial  ██████████████████████████████████████ 0.039ms
-  zstd-3         ████████████████ 0.017ms
+  openzl-serial  █████████████████████████████████████ 0.038ms
+  zstd-3         █████████████████ 0.017ms
   gzip-6         ████████████████████████████████████████ 0.041ms
 E-100kb
-  openzl-serial  ████████████████ 0.137ms
-  zstd-3         ██████████ 0.083ms
-  gzip-6         ████████████████████████████████████████ 0.337ms
+  openzl-serial  ████████████████ 0.134ms
+  zstd-3         ████████ 0.064ms
+  gzip-6         ████████████████████████████████████████ 0.336ms
 E-1mb
-  openzl-serial  ████████████ 1.11ms
-  zstd-3         █████ 0.437ms
-  gzip-6         ████████████████████████████████████████ 3.57ms
+  openzl-serial  █████████████ 1.12ms
+  zstd-3         ███████ 0.584ms
+  gzip-6         ████████████████████████████████████████ 3.51ms
 ```
 
 ## HTTP simulation (encode p50 + network)
@@ -177,256 +178,259 @@ Model: `TTFB = encode_p50 + RTT/2`, `total = encode_p50 + RTT + transfer(compres
 
 | Corpus | Codec | Compressed | Enc p50 | Transfer | TTFB | Total | vs identity |
 |--------|-------|-----------:|--------:|---------:|-----:|------:|------------:|
-| A | brotli-11 | 3.0KB | 127.8ms | 15.39ms | 202.8ms | 293.2ms | +369.1ms saved |
-| A | brotli-4 | 5.0KB | 0.237ms | 25.84ms | 75.24ms | 176.1ms | +486.2ms saved |
-| A | gzip-1 | 8.9KB | 0.114ms | 45.67ms | 75.11ms | 195.8ms | +466.4ms saved |
-| A | gzip-6 | 6.0KB | 0.347ms | 30.82ms | 75.35ms | 181.2ms | +481.1ms saved |
-| A | gzip-9 | 5.9KB | 0.675ms | 30.00ms | 75.67ms | 180.7ms | +481.6ms saved |
-| A | openzl-api-list | 4.7KB | 3.28ms | 24.04ms | 78.28ms | 177.3ms | +484.9ms saved |
-| A | openzl-serial | 9.0KB | 0.146ms | 45.88ms | 75.15ms | 196.0ms | +466.2ms saved |
-| A | zstd-1 | 5.2KB | 0.068ms | 26.43ms | 75.07ms | 176.5ms | +485.7ms saved |
-| A | zstd-19 | 3.8KB | 40.85ms | 19.39ms | 115.9ms | 210.2ms | +452.0ms saved |
-| A | zstd-3 | 5.5KB | 0.126ms | 28.16ms | 75.13ms | 178.3ms | +483.9ms saved |
-| B | brotli-11 | 19.7KB | 97.80ms | 100.7ms | 172.8ms | 348.5ms | +314.1ms saved |
-| B | brotli-4 | 25.4KB | 0.771ms | 130.2ms | 75.77ms | 280.9ms | +381.7ms saved |
-| B | gzip-1 | 30.4KB | 0.506ms | 155.5ms | 75.51ms | 306.0ms | +356.6ms saved |
-| B | gzip-6 | 26.3KB | 1.20ms | 134.8ms | 76.20ms | 286.0ms | +376.6ms saved |
-| B | gzip-9 | 25.7KB | 2.80ms | 131.4ms | 77.80ms | 284.2ms | +378.4ms saved |
-| B | openzl-serial | 25.6KB | 0.260ms | 131.2ms | 75.26ms | 281.5ms | +381.2ms saved |
-| B | openzl-timeseries | 23.9KB | 3.00ms | 122.1ms | 78.00ms | 275.1ms | +387.5ms saved |
-| B | zstd-1 | 23.8KB | 0.190ms | 122.0ms | 75.19ms | 272.2ms | +390.4ms saved |
-| B | zstd-19 | 20.6KB | 19.09ms | 105.5ms | 94.09ms | 274.6ms | +388.0ms saved |
-| B | zstd-3 | 25.9KB | 0.236ms | 132.4ms | 75.24ms | 282.7ms | +380.0ms saved |
-| C | brotli-11 | 1.7KB | 34.13ms | 8.69ms | 109.1ms | 192.8ms | +472.4ms saved |
-| C | brotli-4 | 1.9KB | 0.132ms | 9.84ms | 75.13ms | 160.0ms | +505.2ms saved |
-| C | gzip-1 | 2.9KB | 0.065ms | 14.89ms | 75.06ms | 165.0ms | +500.2ms saved |
+| A | brotli-11 | 3.0KB | 122.2ms | 15.39ms | 197.2ms | 287.6ms | +374.6ms saved |
+| A | brotli-4 | 5.0KB | 0.238ms | 25.84ms | 75.24ms | 176.1ms | +486.2ms saved |
+| A | gzip-1 | 8.9KB | 0.113ms | 45.67ms | 75.11ms | 195.8ms | +466.4ms saved |
+| A | gzip-6 | 6.0KB | 0.338ms | 30.82ms | 75.34ms | 181.2ms | +481.1ms saved |
+| A | gzip-9 | 5.9KB | 0.671ms | 30.00ms | 75.67ms | 180.7ms | +481.6ms saved |
+| A | openzl-api-list | 4.7KB | 0.301ms | 24.04ms | 75.30ms | 174.3ms | +487.9ms saved |
+| A | openzl-serial | 9.0KB | 0.197ms | 45.88ms | 75.20ms | 196.1ms | +466.2ms saved |
+| A | zstd-1 | 5.2KB | 0.064ms | 26.43ms | 75.06ms | 176.5ms | +485.7ms saved |
+| A | zstd-19 | 3.8KB | 39.72ms | 19.39ms | 114.7ms | 209.1ms | +453.1ms saved |
+| A | zstd-3 | 5.5KB | 0.140ms | 28.16ms | 75.14ms | 178.3ms | +483.9ms saved |
+| B | brotli-11 | 19.7KB | 97.39ms | 100.7ms | 172.4ms | 348.1ms | +314.5ms saved |
+| B | brotli-4 | 25.4KB | 0.764ms | 130.2ms | 75.76ms | 280.9ms | +381.7ms saved |
+| B | gzip-1 | 30.4KB | 0.548ms | 155.5ms | 75.55ms | 306.1ms | +356.6ms saved |
+| B | gzip-6 | 26.3KB | 1.25ms | 134.8ms | 76.25ms | 286.0ms | +376.6ms saved |
+| B | gzip-9 | 25.7KB | 2.71ms | 131.4ms | 77.71ms | 284.1ms | +378.5ms saved |
+| B | openzl-serial | 25.6KB | 0.261ms | 131.2ms | 75.26ms | 281.5ms | +381.2ms saved |
+| B | openzl-timeseries | 23.9KB | 0.174ms | 122.1ms | 75.17ms | 272.3ms | +390.3ms saved |
+| B | zstd-1 | 23.8KB | 0.180ms | 122.0ms | 75.18ms | 272.2ms | +390.5ms saved |
+| B | zstd-19 | 20.6KB | 18.96ms | 105.5ms | 93.96ms | 274.5ms | +388.1ms saved |
+| B | zstd-3 | 25.9KB | 0.297ms | 132.4ms | 75.30ms | 282.7ms | +379.9ms saved |
+| C | brotli-11 | 1.7KB | 33.95ms | 8.69ms | 109.0ms | 192.6ms | +472.5ms saved |
+| C | brotli-4 | 1.9KB | 0.133ms | 9.84ms | 75.13ms | 160.0ms | +505.2ms saved |
+| C | gzip-1 | 2.9KB | 0.063ms | 14.89ms | 75.06ms | 165.0ms | +500.2ms saved |
 | C | gzip-6 | 2.9KB | 0.233ms | 14.93ms | 75.23ms | 165.2ms | +500.0ms saved |
-| C | gzip-9 | 2.7KB | 0.292ms | 13.65ms | 75.29ms | 163.9ms | +501.2ms saved |
-| C | openzl-prose | 2.1KB | 2.98ms | 10.76ms | 77.98ms | 163.7ms | +501.4ms saved |
-| C | openzl-serial | 3.5KB | 0.070ms | 17.80ms | 75.07ms | 167.9ms | +497.3ms saved |
+| C | gzip-9 | 2.7KB | 0.293ms | 13.65ms | 75.29ms | 163.9ms | +501.2ms saved |
+| C | openzl-prose | 2.1KB | 0.100ms | 10.76ms | 75.10ms | 160.9ms | +504.3ms saved |
+| C | openzl-serial | 3.5KB | 0.068ms | 17.80ms | 75.07ms | 167.9ms | +497.3ms saved |
 | C | zstd-1 | 1.9KB | 0.028ms | 9.71ms | 75.03ms | 159.7ms | +505.4ms saved |
-| C | zstd-19 | 1.8KB | 15.20ms | 9.25ms | 90.20ms | 174.5ms | +490.7ms saved |
-| C | zstd-3 | 2.0KB | 0.067ms | 10.20ms | 75.07ms | 160.3ms | +504.9ms saved |
-| D | brotli-11 | 21.3KB | 93.60ms | 109.0ms | 168.6ms | 352.6ms | +309.5ms saved |
-| D | brotli-4 | 30.9KB | 0.803ms | 158.2ms | 75.80ms | 309.0ms | +353.1ms saved |
-| D | gzip-1 | 37.3KB | 0.502ms | 190.8ms | 75.50ms | 341.3ms | +320.8ms saved |
-| D | gzip-6 | 32.8KB | 2.30ms | 167.9ms | 77.30ms | 320.2ms | +341.9ms saved |
-| D | gzip-9 | 32.0KB | 11.41ms | 164.0ms | 86.41ms | 325.4ms | +336.7ms saved |
-| D | openzl-serial | 33.3KB | 0.365ms | 170.7ms | 75.37ms | 321.0ms | +341.1ms saved |
-| D | zstd-1 | 28.2KB | 0.193ms | 144.6ms | 75.19ms | 294.8ms | +367.3ms saved |
-| D | zstd-19 | 28.0KB | 20.81ms | 143.6ms | 95.81ms | 314.4ms | +347.7ms saved |
-| D | zstd-3 | 32.3KB | 0.276ms | 165.3ms | 75.28ms | 315.6ms | +346.5ms saved |
-| E-100kb | brotli-11 | 3.0KB | 122.6ms | 15.39ms | 197.6ms | 288.0ms | +374.2ms saved |
-| E-100kb | brotli-4 | 5.0KB | 0.232ms | 25.84ms | 75.23ms | 176.1ms | +486.2ms saved |
-| E-100kb | gzip-1 | 8.9KB | 0.105ms | 45.67ms | 75.11ms | 195.8ms | +466.5ms saved |
-| E-100kb | gzip-6 | 6.0KB | 0.337ms | 30.82ms | 75.34ms | 181.2ms | +481.1ms saved |
-| E-100kb | gzip-9 | 5.9KB | 0.674ms | 30.00ms | 75.67ms | 180.7ms | +481.6ms saved |
-| E-100kb | openzl-api-list | 4.7KB | 3.19ms | 24.04ms | 78.19ms | 177.2ms | +485.0ms saved |
-| E-100kb | openzl-serial | 9.0KB | 0.137ms | 45.88ms | 75.14ms | 196.0ms | +466.2ms saved |
-| E-100kb | zstd-1 | 5.2KB | 0.058ms | 26.43ms | 75.06ms | 176.5ms | +485.7ms saved |
-| E-100kb | zstd-19 | 3.8KB | 38.17ms | 19.39ms | 113.2ms | 207.6ms | +454.7ms saved |
-| E-100kb | zstd-3 | 5.5KB | 0.083ms | 28.16ms | 75.08ms | 178.2ms | +484.0ms saved |
-| E-1kb | brotli-11 | 265B | 1.27ms | 1.32ms | 76.27ms | 152.6ms | +2.94ms saved |
+| C | zstd-19 | 1.8KB | 14.98ms | 9.25ms | 89.98ms | 174.2ms | +490.9ms saved |
+| C | zstd-3 | 2.0KB | 0.057ms | 10.20ms | 75.06ms | 160.3ms | +504.9ms saved |
+| D | brotli-11 | 21.3KB | 100.5ms | 109.0ms | 175.5ms | 359.5ms | +302.5ms saved |
+| D | brotli-4 | 30.9KB | 0.809ms | 158.2ms | 75.81ms | 309.0ms | +353.1ms saved |
+| D | gzip-1 | 37.3KB | 0.493ms | 190.8ms | 75.49ms | 341.3ms | +320.8ms saved |
+| D | gzip-6 | 32.8KB | 2.25ms | 167.9ms | 77.25ms | 320.1ms | +342.0ms saved |
+| D | gzip-9 | 32.0KB | 11.35ms | 164.0ms | 86.35ms | 325.3ms | +336.7ms saved |
+| D | openzl-serial | 33.3KB | 0.369ms | 170.7ms | 75.37ms | 321.0ms | +341.1ms saved |
+| D | zstd-1 | 28.2KB | 0.211ms | 144.6ms | 75.21ms | 294.8ms | +367.3ms saved |
+| D | zstd-19 | 28.0KB | 20.88ms | 143.6ms | 95.88ms | 314.5ms | +347.6ms saved |
+| D | zstd-3 | 32.3KB | 0.305ms | 165.3ms | 75.31ms | 315.6ms | +346.4ms saved |
+| E-100kb | brotli-11 | 3.0KB | 123.6ms | 15.39ms | 198.6ms | 289.0ms | +373.2ms saved |
+| E-100kb | brotli-4 | 5.0KB | 0.231ms | 25.84ms | 75.23ms | 176.1ms | +486.2ms saved |
+| E-100kb | gzip-1 | 8.9KB | 0.115ms | 45.67ms | 75.11ms | 195.8ms | +466.4ms saved |
+| E-100kb | gzip-6 | 6.0KB | 0.336ms | 30.82ms | 75.34ms | 181.2ms | +481.1ms saved |
+| E-100kb | gzip-9 | 5.9KB | 0.668ms | 30.00ms | 75.67ms | 180.7ms | +481.6ms saved |
+| E-100kb | openzl-api-list | 4.7KB | 0.266ms | 24.04ms | 75.27ms | 174.3ms | +487.9ms saved |
+| E-100kb | openzl-serial | 9.0KB | 0.134ms | 45.88ms | 75.13ms | 196.0ms | +466.2ms saved |
+| E-100kb | zstd-1 | 5.2KB | 0.055ms | 26.43ms | 75.06ms | 176.5ms | +485.7ms saved |
+| E-100kb | zstd-19 | 3.8KB | 38.16ms | 19.39ms | 113.2ms | 207.5ms | +454.7ms saved |
+| E-100kb | zstd-3 | 5.5KB | 0.064ms | 28.16ms | 75.06ms | 178.2ms | +484.0ms saved |
+| E-1kb | brotli-11 | 265B | 1.25ms | 1.32ms | 76.25ms | 152.6ms | +2.95ms saved |
 | E-1kb | brotli-4 | 303B | 0.019ms | 1.51ms | 75.02ms | 151.5ms | +4.00ms saved |
 | E-1kb | gzip-1 | 344B | 0.012ms | 1.72ms | 75.01ms | 151.7ms | +3.80ms saved |
 | E-1kb | gzip-6 | 332B | 0.014ms | 1.66ms | 75.01ms | 151.7ms | +3.86ms saved |
-| E-1kb | gzip-9 | 332B | 0.013ms | 1.66ms | 75.01ms | 151.7ms | +3.86ms saved |
-| E-1kb | openzl-api-list | 348B | 2.42ms | 1.74ms | 77.42ms | 154.2ms | +1.37ms saved |
+| E-1kb | gzip-9 | 332B | 0.014ms | 1.66ms | 75.01ms | 151.7ms | +3.86ms saved |
+| E-1kb | openzl-api-list | 348B | 0.019ms | 1.74ms | 75.02ms | 151.8ms | +3.77ms saved |
 | E-1kb | openzl-serial | 447B | 0.023ms | 2.23ms | 75.02ms | 152.3ms | +3.27ms saved |
 | E-1kb | zstd-1 | 332B | 8.4µs | 1.66ms | 75.01ms | 151.7ms | +3.86ms saved |
 | E-1kb | zstd-19 | 318B | 0.129ms | 1.59ms | 75.13ms | 151.7ms | +3.81ms saved |
-| E-1kb | zstd-3 | 328B | 8.7µs | 1.64ms | 75.01ms | 151.6ms | +3.88ms saved |
-| E-1mb | brotli-11 | 12.1KB | 1563.9ms | 62.09ms | 1638.9ms | 1776.0ms | +3616.9ms saved |
-| E-1mb | brotli-4 | 31.5KB | 1.89ms | 161.1ms | 76.89ms | 313.0ms | +5079.9ms saved |
-| E-1mb | gzip-1 | 87.1KB | 1.16ms | 446.2ms | 76.16ms | 597.3ms | +4795.6ms saved |
-| E-1mb | gzip-6 | 54.8KB | 3.57ms | 280.4ms | 78.57ms | 434.0ms | +4958.9ms saved |
-| E-1mb | gzip-9 | 52.7KB | 7.60ms | 270.1ms | 82.60ms | 427.7ms | +4965.2ms saved |
-| E-1mb | openzl-api-list | 22.5KB | 8.61ms | 115.2ms | 83.61ms | 273.8ms | +5119.1ms saved |
-| E-1mb | openzl-serial | 80.1KB | 1.11ms | 409.9ms | 76.11ms | 561.0ms | +4831.9ms saved |
-| E-1mb | zstd-1 | 20.9KB | 0.365ms | 107.2ms | 75.36ms | 257.5ms | +5135.4ms saved |
-| E-1mb | zstd-19 | 14.7KB | 527.2ms | 75.03ms | 602.2ms | 752.2ms | +4640.7ms saved |
-| E-1mb | zstd-3 | 27.1KB | 0.437ms | 139.0ms | 75.44ms | 289.4ms | +5103.5ms saved |
-| F | brotli-11 | 33.2KB | 246.1ms | 170.2ms | 321.1ms | 566.2ms | +95.75ms saved |
-| F | brotli-4 | 48.5KB | 1.49ms | 248.2ms | 76.49ms | 399.7ms | +262.3ms saved |
-| F | gzip-1 | 63.8KB | 1.16ms | 326.6ms | 76.16ms | 477.8ms | +184.2ms saved |
+| E-1kb | zstd-3 | 328B | 9.2µs | 1.64ms | 75.01ms | 151.6ms | +3.88ms saved |
+| E-1mb | brotli-11 | 12.1KB | 1594.2ms | 62.09ms | 1669.2ms | 1806.3ms | +3586.6ms saved |
+| E-1mb | brotli-4 | 31.5KB | 1.87ms | 161.1ms | 76.87ms | 313.0ms | +5079.9ms saved |
+| E-1mb | gzip-1 | 87.1KB | 1.17ms | 446.2ms | 76.17ms | 597.3ms | +4795.6ms saved |
+| E-1mb | gzip-6 | 54.8KB | 3.51ms | 280.4ms | 78.51ms | 433.9ms | +4959.0ms saved |
+| E-1mb | gzip-9 | 52.7KB | 7.55ms | 270.1ms | 82.55ms | 427.6ms | +4965.3ms saved |
+| E-1mb | openzl-api-list | 22.5KB | 2.23ms | 115.2ms | 77.23ms | 267.4ms | +5125.5ms saved |
+| E-1mb | openzl-serial | 80.1KB | 1.12ms | 409.9ms | 76.12ms | 561.1ms | +4831.8ms saved |
+| E-1mb | zstd-1 | 20.9KB | 0.404ms | 107.2ms | 75.40ms | 257.6ms | +5135.3ms saved |
+| E-1mb | zstd-19 | 14.7KB | 544.6ms | 75.03ms | 619.6ms | 769.7ms | +4623.2ms saved |
+| E-1mb | zstd-3 | 27.1KB | 0.584ms | 139.0ms | 75.58ms | 289.6ms | +5103.3ms saved |
+| F | brotli-11 | 33.2KB | 246.6ms | 170.2ms | 321.6ms | 566.8ms | +95.22ms saved |
+| F | brotli-4 | 48.5KB | 1.48ms | 248.2ms | 76.48ms | 399.7ms | +262.3ms saved |
+| F | gzip-1 | 63.8KB | 1.18ms | 326.6ms | 76.18ms | 477.8ms | +184.2ms saved |
 | F | gzip-6 | 62.9KB | 2.99ms | 322.3ms | 77.99ms | 475.3ms | +186.7ms saved |
-| F | gzip-9 | 62.9KB | 4.14ms | 322.3ms | 79.14ms | 476.4ms | +185.6ms saved |
-| F | openzl-binary | 13.8KB | 3.62ms | 70.85ms | 78.62ms | 224.5ms | +437.5ms saved |
-| F | openzl-binary-le-u32 | 7.5KB | 4.61ms | 38.31ms | 79.61ms | 192.9ms | +469.1ms saved |
-| F | openzl-serial | 64.7KB | 0.146ms | 331.2ms | 75.15ms | 481.3ms | +180.7ms saved |
-| F | zstd-1 | 47.7KB | 0.210ms | 244.2ms | 75.21ms | 394.4ms | +267.6ms saved |
-| F | zstd-19 | 51.3KB | 12.86ms | 262.8ms | 87.86ms | 425.7ms | +236.3ms saved |
-| F | zstd-3 | 52.5KB | 0.295ms | 269.0ms | 75.29ms | 419.3ms | +242.7ms saved |
+| F | gzip-9 | 62.9KB | 4.13ms | 322.3ms | 79.13ms | 476.4ms | +185.6ms saved |
+| F | openzl-binary | 13.8KB | 0.615ms | 70.85ms | 75.61ms | 221.5ms | +440.5ms saved |
+| F | openzl-binary-le-u32 | 7.5KB | 1.50ms | 38.33ms | 76.50ms | 189.8ms | +472.2ms saved |
+| F | openzl-binary-sddl | 6.4KB | 0.728ms | 32.63ms | 75.73ms | 183.4ms | +478.6ms saved |
+| F | openzl-serial | 64.7KB | 0.142ms | 331.2ms | 75.14ms | 481.3ms | +180.7ms saved |
+| F | zstd-1 | 47.7KB | 0.186ms | 244.2ms | 75.19ms | 394.4ms | +267.6ms saved |
+| F | zstd-19 | 51.3KB | 12.96ms | 262.8ms | 87.96ms | 425.8ms | +236.2ms saved |
+| F | zstd-3 | 52.5KB | 0.319ms | 269.0ms | 75.32ms | 419.3ms | +242.7ms saved |
 
 ### 50 Mbps (20ms RTT)
 
 | Corpus | Codec | Compressed | Enc p50 | Transfer | TTFB | Total | vs identity |
 |--------|-------|-----------:|--------:|---------:|-----:|------:|------------:|
-| A | brotli-11 | 3.0KB | 127.8ms | 0.492ms | 137.8ms | 148.3ms | -111886.9µs saved |
-| A | brotli-4 | 5.0KB | 0.237ms | 0.827ms | 10.24ms | 21.06ms | +15.33ms saved |
-| A | gzip-1 | 8.9KB | 0.114ms | 1.46ms | 10.11ms | 21.58ms | +14.82ms saved |
-| A | gzip-6 | 6.0KB | 0.347ms | 0.986ms | 10.35ms | 21.33ms | +15.06ms saved |
-| A | gzip-9 | 5.9KB | 0.675ms | 0.960ms | 10.67ms | 21.63ms | +14.76ms saved |
-| A | openzl-api-list | 4.7KB | 3.28ms | 0.769ms | 13.28ms | 24.05ms | +12.34ms saved |
-| A | openzl-serial | 9.0KB | 0.146ms | 1.47ms | 10.15ms | 21.61ms | +14.78ms saved |
-| A | zstd-1 | 5.2KB | 0.068ms | 0.846ms | 10.07ms | 20.91ms | +15.48ms saved |
-| A | zstd-19 | 3.8KB | 40.85ms | 0.620ms | 50.85ms | 61.47ms | -25080.7µs saved |
-| A | zstd-3 | 5.5KB | 0.126ms | 0.901ms | 10.13ms | 21.03ms | +15.36ms saved |
-| B | brotli-11 | 19.7KB | 97.80ms | 3.22ms | 107.8ms | 121.0ms | -84613.3µs saved |
-| B | brotli-4 | 25.4KB | 0.771ms | 4.17ms | 10.77ms | 24.94ms | +11.47ms saved |
-| B | gzip-1 | 30.4KB | 0.506ms | 4.98ms | 10.51ms | 25.48ms | +10.92ms saved |
-| B | gzip-6 | 26.3KB | 1.20ms | 4.31ms | 11.20ms | 25.51ms | +10.89ms saved |
-| B | gzip-9 | 25.7KB | 2.80ms | 4.21ms | 12.80ms | 27.01ms | +9.40ms saved |
-| B | openzl-serial | 25.6KB | 0.260ms | 4.20ms | 10.26ms | 24.46ms | +11.95ms saved |
-| B | openzl-timeseries | 23.9KB | 3.00ms | 3.91ms | 13.00ms | 26.91ms | +9.50ms saved |
-| B | zstd-1 | 23.8KB | 0.190ms | 3.90ms | 10.19ms | 24.09ms | +12.31ms saved |
-| B | zstd-19 | 20.6KB | 19.09ms | 3.38ms | 29.09ms | 42.47ms | -6065.0µs saved |
-| B | zstd-3 | 25.9KB | 0.236ms | 4.24ms | 10.24ms | 24.47ms | +11.93ms saved |
-| C | brotli-11 | 1.7KB | 34.13ms | 0.278ms | 44.13ms | 54.41ms | -17927.4µs saved |
-| C | brotli-4 | 1.9KB | 0.132ms | 0.315ms | 10.13ms | 20.45ms | +16.04ms saved |
-| C | gzip-1 | 2.9KB | 0.065ms | 0.477ms | 10.06ms | 20.54ms | +15.94ms saved |
+| A | brotli-11 | 3.0KB | 122.2ms | 0.492ms | 132.2ms | 142.7ms | -106340.5µs saved |
+| A | brotli-4 | 5.0KB | 0.238ms | 0.827ms | 10.24ms | 21.06ms | +15.33ms saved |
+| A | gzip-1 | 8.9KB | 0.113ms | 1.46ms | 10.11ms | 21.57ms | +14.82ms saved |
+| A | gzip-6 | 6.0KB | 0.338ms | 0.986ms | 10.34ms | 21.32ms | +15.07ms saved |
+| A | gzip-9 | 5.9KB | 0.671ms | 0.960ms | 10.67ms | 21.63ms | +14.76ms saved |
+| A | openzl-api-list | 4.7KB | 0.301ms | 0.769ms | 10.30ms | 21.07ms | +15.32ms saved |
+| A | openzl-serial | 9.0KB | 0.197ms | 1.47ms | 10.20ms | 21.66ms | +14.73ms saved |
+| A | zstd-1 | 5.2KB | 0.064ms | 0.846ms | 10.06ms | 20.91ms | +15.48ms saved |
+| A | zstd-19 | 3.8KB | 39.72ms | 0.620ms | 49.72ms | 60.34ms | -23944.8µs saved |
+| A | zstd-3 | 5.5KB | 0.140ms | 0.901ms | 10.14ms | 21.04ms | +15.35ms saved |
+| B | brotli-11 | 19.7KB | 97.39ms | 3.22ms | 107.4ms | 120.6ms | -84205.1µs saved |
+| B | brotli-4 | 25.4KB | 0.764ms | 4.17ms | 10.76ms | 24.93ms | +11.47ms saved |
+| B | gzip-1 | 30.4KB | 0.548ms | 4.98ms | 10.55ms | 25.52ms | +10.88ms saved |
+| B | gzip-6 | 26.3KB | 1.25ms | 4.31ms | 11.25ms | 25.57ms | +10.84ms saved |
+| B | gzip-9 | 25.7KB | 2.71ms | 4.21ms | 12.71ms | 26.91ms | +9.49ms saved |
+| B | openzl-serial | 25.6KB | 0.261ms | 4.20ms | 10.26ms | 24.46ms | +11.94ms saved |
+| B | openzl-timeseries | 23.9KB | 0.174ms | 3.91ms | 10.17ms | 24.08ms | +12.32ms saved |
+| B | zstd-1 | 23.8KB | 0.180ms | 3.90ms | 10.18ms | 24.08ms | +12.32ms saved |
+| B | zstd-19 | 20.6KB | 18.96ms | 3.38ms | 28.96ms | 42.34ms | -5933.2µs saved |
+| B | zstd-3 | 25.9KB | 0.297ms | 4.24ms | 10.30ms | 24.53ms | +11.87ms saved |
+| C | brotli-11 | 1.7KB | 33.95ms | 0.278ms | 43.95ms | 54.23ms | -17744.6µs saved |
+| C | brotli-4 | 1.9KB | 0.133ms | 0.315ms | 10.13ms | 20.45ms | +16.04ms saved |
+| C | gzip-1 | 2.9KB | 0.063ms | 0.477ms | 10.06ms | 20.54ms | +15.95ms saved |
 | C | gzip-6 | 2.9KB | 0.233ms | 0.478ms | 10.23ms | 20.71ms | +15.77ms saved |
-| C | gzip-9 | 2.7KB | 0.292ms | 0.437ms | 10.29ms | 20.73ms | +15.76ms saved |
-| C | openzl-prose | 2.1KB | 2.98ms | 0.344ms | 12.98ms | 23.32ms | +13.16ms saved |
-| C | openzl-serial | 3.5KB | 0.070ms | 0.569ms | 10.07ms | 20.64ms | +15.85ms saved |
+| C | gzip-9 | 2.7KB | 0.293ms | 0.437ms | 10.29ms | 20.73ms | +15.76ms saved |
+| C | openzl-prose | 2.1KB | 0.100ms | 0.344ms | 10.10ms | 20.44ms | +16.04ms saved |
+| C | openzl-serial | 3.5KB | 0.068ms | 0.569ms | 10.07ms | 20.64ms | +15.85ms saved |
 | C | zstd-1 | 1.9KB | 0.028ms | 0.311ms | 10.03ms | 20.34ms | +16.15ms saved |
-| C | zstd-19 | 1.8KB | 15.20ms | 0.296ms | 25.20ms | 35.50ms | +0.986ms saved |
-| C | zstd-3 | 2.0KB | 0.067ms | 0.326ms | 10.07ms | 20.39ms | +16.09ms saved |
-| D | brotli-11 | 21.3KB | 93.60ms | 3.49ms | 103.6ms | 117.1ms | -80700.2µs saved |
-| D | brotli-4 | 30.9KB | 0.803ms | 5.06ms | 10.80ms | 25.86ms | +10.52ms saved |
-| D | gzip-1 | 37.3KB | 0.502ms | 6.11ms | 10.50ms | 26.61ms | +9.78ms saved |
-| D | gzip-6 | 32.8KB | 2.30ms | 5.37ms | 12.30ms | 27.67ms | +8.71ms saved |
-| D | gzip-9 | 32.0KB | 11.41ms | 5.25ms | 21.41ms | 36.66ms | -275.9µs saved |
-| D | openzl-serial | 33.3KB | 0.365ms | 5.46ms | 10.37ms | 25.83ms | +10.56ms saved |
-| D | zstd-1 | 28.2KB | 0.193ms | 4.63ms | 10.19ms | 24.82ms | +11.57ms saved |
-| D | zstd-19 | 28.0KB | 20.81ms | 4.59ms | 30.81ms | 45.41ms | -9022.9µs saved |
-| D | zstd-3 | 32.3KB | 0.276ms | 5.29ms | 10.28ms | 25.57ms | +10.82ms saved |
-| E-100kb | brotli-11 | 3.0KB | 122.6ms | 0.492ms | 132.6ms | 143.1ms | -106714.7µs saved |
-| E-100kb | brotli-4 | 5.0KB | 0.232ms | 0.827ms | 10.23ms | 21.06ms | +15.33ms saved |
-| E-100kb | gzip-1 | 8.9KB | 0.105ms | 1.46ms | 10.11ms | 21.57ms | +14.82ms saved |
-| E-100kb | gzip-6 | 6.0KB | 0.337ms | 0.986ms | 10.34ms | 21.32ms | +15.07ms saved |
-| E-100kb | gzip-9 | 5.9KB | 0.674ms | 0.960ms | 10.67ms | 21.63ms | +14.76ms saved |
-| E-100kb | openzl-api-list | 4.7KB | 3.19ms | 0.769ms | 13.19ms | 23.96ms | +12.43ms saved |
-| E-100kb | openzl-serial | 9.0KB | 0.137ms | 1.47ms | 10.14ms | 21.60ms | +14.79ms saved |
-| E-100kb | zstd-1 | 5.2KB | 0.058ms | 0.846ms | 10.06ms | 20.90ms | +15.49ms saved |
-| E-100kb | zstd-19 | 3.8KB | 38.17ms | 0.620ms | 48.17ms | 58.79ms | -22402.2µs saved |
-| E-100kb | zstd-3 | 5.5KB | 0.083ms | 0.901ms | 10.08ms | 20.98ms | +15.41ms saved |
-| E-1kb | brotli-11 | 265B | 1.27ms | 0.042ms | 11.27ms | 21.31ms | -1133.0µs saved |
+| C | zstd-19 | 1.8KB | 14.98ms | 0.296ms | 24.98ms | 35.28ms | +1.21ms saved |
+| C | zstd-3 | 2.0KB | 0.057ms | 0.326ms | 10.06ms | 20.38ms | +16.10ms saved |
+| D | brotli-11 | 21.3KB | 100.5ms | 3.49ms | 110.5ms | 124.0ms | -87603.4µs saved |
+| D | brotli-4 | 30.9KB | 0.809ms | 5.06ms | 10.81ms | 25.87ms | +10.52ms saved |
+| D | gzip-1 | 37.3KB | 0.493ms | 6.11ms | 10.49ms | 26.60ms | +9.79ms saved |
+| D | gzip-6 | 32.8KB | 2.25ms | 5.37ms | 12.25ms | 27.63ms | +8.76ms saved |
+| D | gzip-9 | 32.0KB | 11.35ms | 5.25ms | 21.35ms | 36.60ms | -211.1µs saved |
+| D | openzl-serial | 33.3KB | 0.369ms | 5.46ms | 10.37ms | 25.83ms | +10.56ms saved |
+| D | zstd-1 | 28.2KB | 0.211ms | 4.63ms | 10.21ms | 24.84ms | +11.55ms saved |
+| D | zstd-19 | 28.0KB | 20.88ms | 4.59ms | 30.88ms | 45.48ms | -9088.7µs saved |
+| D | zstd-3 | 32.3KB | 0.305ms | 5.29ms | 10.31ms | 25.60ms | +10.79ms saved |
+| E-100kb | brotli-11 | 3.0KB | 123.6ms | 0.492ms | 133.6ms | 144.1ms | -107750.7µs saved |
+| E-100kb | brotli-4 | 5.0KB | 0.231ms | 0.827ms | 10.23ms | 21.06ms | +15.33ms saved |
+| E-100kb | gzip-1 | 8.9KB | 0.115ms | 1.46ms | 10.11ms | 21.58ms | +14.82ms saved |
+| E-100kb | gzip-6 | 6.0KB | 0.336ms | 0.986ms | 10.34ms | 21.32ms | +15.07ms saved |
+| E-100kb | gzip-9 | 5.9KB | 0.668ms | 0.960ms | 10.67ms | 21.63ms | +14.76ms saved |
+| E-100kb | openzl-api-list | 4.7KB | 0.266ms | 0.769ms | 10.27ms | 21.03ms | +15.36ms saved |
+| E-100kb | openzl-serial | 9.0KB | 0.134ms | 1.47ms | 10.13ms | 21.60ms | +14.79ms saved |
+| E-100kb | zstd-1 | 5.2KB | 0.055ms | 0.846ms | 10.06ms | 20.90ms | +15.49ms saved |
+| E-100kb | zstd-19 | 3.8KB | 38.16ms | 0.620ms | 48.16ms | 58.78ms | -22384.9µs saved |
+| E-100kb | zstd-3 | 5.5KB | 0.064ms | 0.901ms | 10.06ms | 20.97ms | +15.43ms saved |
+| E-1kb | brotli-11 | 265B | 1.25ms | 0.042ms | 11.25ms | 21.30ms | -1118.3µs saved |
 | E-1kb | brotli-4 | 303B | 0.019ms | 0.048ms | 10.02ms | 20.07ms | +0.109ms saved |
 | E-1kb | gzip-1 | 344B | 0.012ms | 0.055ms | 10.01ms | 20.07ms | +0.110ms saved |
 | E-1kb | gzip-6 | 332B | 0.014ms | 0.053ms | 10.01ms | 20.07ms | +0.110ms saved |
-| E-1kb | gzip-9 | 332B | 0.013ms | 0.053ms | 10.01ms | 20.07ms | +0.110ms saved |
-| E-1kb | openzl-api-list | 348B | 2.42ms | 0.056ms | 12.42ms | 22.48ms | -2301.0µs saved |
+| E-1kb | gzip-9 | 332B | 0.014ms | 0.053ms | 10.01ms | 20.07ms | +0.110ms saved |
+| E-1kb | openzl-api-list | 348B | 0.019ms | 0.056ms | 10.02ms | 20.07ms | +0.102ms saved |
 | E-1kb | openzl-serial | 447B | 0.023ms | 0.072ms | 10.02ms | 20.09ms | +0.083ms saved |
 | E-1kb | zstd-1 | 332B | 8.4µs | 0.053ms | 10.01ms | 20.06ms | +0.115ms saved |
-| E-1kb | zstd-19 | 318B | 0.129ms | 0.051ms | 10.13ms | 20.18ms | -2.8µs saved |
-| E-1kb | zstd-3 | 328B | 8.7µs | 0.052ms | 10.01ms | 20.06ms | +0.116ms saved |
-| E-1mb | brotli-11 | 12.1KB | 1563.9ms | 1.99ms | 1573.9ms | 1585.9ms | -1398097.2µs saved |
-| E-1mb | brotli-4 | 31.5KB | 1.89ms | 5.16ms | 11.89ms | 27.04ms | +160.7ms saved |
-| E-1mb | gzip-1 | 87.1KB | 1.16ms | 14.28ms | 11.16ms | 35.44ms | +152.3ms saved |
-| E-1mb | gzip-6 | 54.8KB | 3.57ms | 8.97ms | 13.57ms | 32.55ms | +155.2ms saved |
-| E-1mb | gzip-9 | 52.7KB | 7.60ms | 8.64ms | 17.60ms | 36.25ms | +151.5ms saved |
-| E-1mb | openzl-api-list | 22.5KB | 8.61ms | 3.69ms | 18.61ms | 32.30ms | +155.5ms saved |
-| E-1mb | openzl-serial | 80.1KB | 1.11ms | 13.12ms | 11.11ms | 34.23ms | +153.5ms saved |
-| E-1mb | zstd-1 | 20.9KB | 0.365ms | 3.43ms | 10.36ms | 23.79ms | +164.0ms saved |
-| E-1mb | zstd-19 | 14.7KB | 527.2ms | 2.40ms | 537.2ms | 549.6ms | -361824.4µs saved |
-| E-1mb | zstd-3 | 27.1KB | 0.437ms | 4.45ms | 10.44ms | 24.88ms | +162.9ms saved |
-| F | brotli-11 | 33.2KB | 246.1ms | 5.44ms | 256.1ms | 271.5ms | -235157.7µs saved |
-| F | brotli-4 | 48.5KB | 1.49ms | 7.94ms | 11.49ms | 29.43ms | +6.95ms saved |
-| F | gzip-1 | 63.8KB | 1.16ms | 10.45ms | 11.16ms | 31.61ms | +4.77ms saved |
+| E-1kb | zstd-19 | 318B | 0.129ms | 0.051ms | 10.13ms | 20.18ms | -3.2µs saved |
+| E-1kb | zstd-3 | 328B | 9.2µs | 0.052ms | 10.01ms | 20.06ms | +0.115ms saved |
+| E-1mb | brotli-11 | 12.1KB | 1594.2ms | 1.99ms | 1604.2ms | 1616.2ms | -1428413.3µs saved |
+| E-1mb | brotli-4 | 31.5KB | 1.87ms | 5.16ms | 11.87ms | 27.02ms | +160.8ms saved |
+| E-1mb | gzip-1 | 87.1KB | 1.17ms | 14.28ms | 11.17ms | 35.45ms | +152.3ms saved |
+| E-1mb | gzip-6 | 54.8KB | 3.51ms | 8.97ms | 13.51ms | 32.48ms | +155.3ms saved |
+| E-1mb | gzip-9 | 52.7KB | 7.55ms | 8.64ms | 17.55ms | 36.19ms | +151.6ms saved |
+| E-1mb | openzl-api-list | 22.5KB | 2.23ms | 3.69ms | 12.23ms | 25.92ms | +161.9ms saved |
+| E-1mb | openzl-serial | 80.1KB | 1.12ms | 13.12ms | 11.12ms | 34.24ms | +153.5ms saved |
+| E-1mb | zstd-1 | 20.9KB | 0.404ms | 3.43ms | 10.40ms | 23.83ms | +163.9ms saved |
+| E-1mb | zstd-19 | 14.7KB | 544.6ms | 2.40ms | 554.6ms | 567.0ms | -379277.4µs saved |
+| E-1mb | zstd-3 | 27.1KB | 0.584ms | 4.45ms | 10.58ms | 25.03ms | +162.7ms saved |
+| F | brotli-11 | 33.2KB | 246.6ms | 5.44ms | 256.6ms | 272.1ms | -235689.5µs saved |
+| F | brotli-4 | 48.5KB | 1.48ms | 7.94ms | 11.48ms | 29.43ms | +6.96ms saved |
+| F | gzip-1 | 63.8KB | 1.18ms | 10.45ms | 11.18ms | 31.63ms | +4.75ms saved |
 | F | gzip-6 | 62.9KB | 2.99ms | 10.31ms | 12.99ms | 33.30ms | +3.08ms saved |
-| F | gzip-9 | 62.9KB | 4.14ms | 10.31ms | 14.14ms | 34.46ms | +1.93ms saved |
-| F | openzl-binary | 13.8KB | 3.62ms | 2.27ms | 13.62ms | 25.89ms | +10.50ms saved |
-| F | openzl-binary-le-u32 | 7.5KB | 4.61ms | 1.23ms | 14.61ms | 25.83ms | +10.55ms saved |
-| F | openzl-serial | 64.7KB | 0.146ms | 10.60ms | 10.15ms | 30.74ms | +5.64ms saved |
-| F | zstd-1 | 47.7KB | 0.210ms | 7.81ms | 10.21ms | 28.02ms | +8.36ms saved |
-| F | zstd-19 | 51.3KB | 12.86ms | 8.41ms | 22.86ms | 41.27ms | -4885.7µs saved |
-| F | zstd-3 | 52.5KB | 0.295ms | 8.61ms | 10.29ms | 28.90ms | +7.48ms saved |
+| F | gzip-9 | 62.9KB | 4.13ms | 10.31ms | 14.13ms | 34.44ms | +1.94ms saved |
+| F | openzl-binary | 13.8KB | 0.615ms | 2.27ms | 10.61ms | 22.88ms | +13.50ms saved |
+| F | openzl-binary-le-u32 | 7.5KB | 1.50ms | 1.23ms | 11.50ms | 22.73ms | +13.66ms saved |
+| F | openzl-binary-sddl | 6.4KB | 0.728ms | 1.04ms | 10.73ms | 21.77ms | +14.61ms saved |
+| F | openzl-serial | 64.7KB | 0.142ms | 10.60ms | 10.14ms | 30.74ms | +5.64ms saved |
+| F | zstd-1 | 47.7KB | 0.186ms | 7.81ms | 10.19ms | 28.00ms | +8.38ms saved |
+| F | zstd-19 | 51.3KB | 12.96ms | 8.41ms | 22.96ms | 41.37ms | -4984.8µs saved |
+| F | zstd-3 | 52.5KB | 0.319ms | 8.61ms | 10.32ms | 28.93ms | +7.46ms saved |
 
 ### LAN 1 Gbps (1ms RTT)
 
 | Corpus | Codec | Compressed | Enc p50 | Transfer | TTFB | Total | vs identity |
 |--------|-------|-----------:|--------:|---------:|-----:|------:|------------:|
-| A | brotli-11 | 3.0KB | 127.8ms | 0.025ms | 128.3ms | 128.8ms | -126990.8µs saved |
-| A | brotli-4 | 5.0KB | 0.237ms | 0.041ms | 0.737ms | 1.28ms | +0.541ms saved |
-| A | gzip-1 | 8.9KB | 0.114ms | 0.073ms | 0.614ms | 1.19ms | +0.632ms saved |
-| A | gzip-6 | 6.0KB | 0.347ms | 0.049ms | 0.847ms | 1.40ms | +0.423ms saved |
-| A | gzip-9 | 5.9KB | 0.675ms | 0.048ms | 1.17ms | 1.72ms | +0.097ms saved |
-| A | openzl-api-list | 4.7KB | 3.28ms | 0.038ms | 3.78ms | 4.32ms | -2500.1µs saved |
-| A | openzl-serial | 9.0KB | 0.146ms | 0.073ms | 0.646ms | 1.22ms | +0.600ms saved |
-| A | zstd-1 | 5.2KB | 0.068ms | 0.042ms | 0.568ms | 1.11ms | +0.709ms saved |
-| A | zstd-19 | 3.8KB | 40.85ms | 0.031ms | 41.35ms | 41.88ms | -40063.2µs saved |
-| A | zstd-3 | 5.5KB | 0.126ms | 0.045ms | 0.626ms | 1.17ms | +0.648ms saved |
-| B | brotli-11 | 19.7KB | 97.80ms | 0.161ms | 98.30ms | 98.96ms | -97136.2µs saved |
-| B | brotli-4 | 25.4KB | 0.771ms | 0.208ms | 1.27ms | 1.98ms | -158.8µs saved |
-| B | gzip-1 | 30.4KB | 0.506ms | 0.249ms | 1.01ms | 1.75ms | +0.065ms saved |
-| B | gzip-6 | 26.3KB | 1.20ms | 0.216ms | 1.70ms | 2.42ms | -597.0µs saved |
-| B | gzip-9 | 25.7KB | 2.80ms | 0.210ms | 3.30ms | 4.01ms | -2191.3µs saved |
-| B | openzl-serial | 25.6KB | 0.260ms | 0.210ms | 0.760ms | 1.47ms | +0.350ms saved |
-| B | openzl-timeseries | 23.9KB | 3.00ms | 0.195ms | 3.50ms | 4.19ms | -2373.1µs saved |
-| B | zstd-1 | 23.8KB | 0.190ms | 0.195ms | 0.690ms | 1.39ms | +0.435ms saved |
-| B | zstd-19 | 20.6KB | 19.09ms | 0.169ms | 19.59ms | 20.26ms | -18440.5µs saved |
-| B | zstd-3 | 25.9KB | 0.236ms | 0.212ms | 0.736ms | 1.45ms | +0.373ms saved |
-| C | brotli-11 | 1.7KB | 34.13ms | 0.014ms | 34.63ms | 35.15ms | -33324.6µs saved |
-| C | brotli-4 | 1.9KB | 0.132ms | 0.016ms | 0.632ms | 1.15ms | +0.676ms saved |
-| C | gzip-1 | 2.9KB | 0.065ms | 0.024ms | 0.565ms | 1.09ms | +0.736ms saved |
+| A | brotli-11 | 3.0KB | 122.2ms | 0.025ms | 122.7ms | 123.3ms | -121444.4µs saved |
+| A | brotli-4 | 5.0KB | 0.238ms | 0.041ms | 0.738ms | 1.28ms | +0.540ms saved |
+| A | gzip-1 | 8.9KB | 0.113ms | 0.073ms | 0.613ms | 1.19ms | +0.633ms saved |
+| A | gzip-6 | 6.0KB | 0.338ms | 0.049ms | 0.838ms | 1.39ms | +0.432ms saved |
+| A | gzip-9 | 5.9KB | 0.671ms | 0.048ms | 1.17ms | 1.72ms | +0.100ms saved |
+| A | openzl-api-list | 4.7KB | 0.301ms | 0.038ms | 0.801ms | 1.34ms | +0.481ms saved |
+| A | openzl-serial | 9.0KB | 0.197ms | 0.073ms | 0.697ms | 1.27ms | +0.549ms saved |
+| A | zstd-1 | 5.2KB | 0.064ms | 0.042ms | 0.564ms | 1.11ms | +0.713ms saved |
+| A | zstd-19 | 3.8KB | 39.72ms | 0.031ms | 40.22ms | 40.75ms | -38927.3µs saved |
+| A | zstd-3 | 5.5KB | 0.140ms | 0.045ms | 0.640ms | 1.18ms | +0.635ms saved |
+| B | brotli-11 | 19.7KB | 97.39ms | 0.161ms | 97.89ms | 98.55ms | -96727.9µs saved |
+| B | brotli-4 | 25.4KB | 0.764ms | 0.208ms | 1.26ms | 1.97ms | -152.6µs saved |
+| B | gzip-1 | 30.4KB | 0.548ms | 0.249ms | 1.05ms | 1.80ms | +0.023ms saved |
+| B | gzip-6 | 26.3KB | 1.25ms | 0.216ms | 1.75ms | 2.47ms | -648.2µs saved |
+| B | gzip-9 | 25.7KB | 2.71ms | 0.210ms | 3.21ms | 3.92ms | -2097.0µs saved |
+| B | openzl-serial | 25.6KB | 0.261ms | 0.210ms | 0.761ms | 1.47ms | +0.350ms saved |
+| B | openzl-timeseries | 23.9KB | 0.174ms | 0.195ms | 0.674ms | 1.37ms | +0.451ms saved |
+| B | zstd-1 | 23.8KB | 0.180ms | 0.195ms | 0.680ms | 1.37ms | +0.445ms saved |
+| B | zstd-19 | 20.6KB | 18.96ms | 0.169ms | 19.46ms | 20.13ms | -18308.8µs saved |
+| B | zstd-3 | 25.9KB | 0.297ms | 0.212ms | 0.797ms | 1.51ms | +0.312ms saved |
+| C | brotli-11 | 1.7KB | 33.95ms | 0.014ms | 34.45ms | 34.97ms | -33141.8µs saved |
+| C | brotli-4 | 1.9KB | 0.133ms | 0.016ms | 0.633ms | 1.15ms | +0.676ms saved |
+| C | gzip-1 | 2.9KB | 0.063ms | 0.024ms | 0.563ms | 1.09ms | +0.737ms saved |
 | C | gzip-6 | 2.9KB | 0.233ms | 0.024ms | 0.733ms | 1.26ms | +0.567ms saved |
-| C | gzip-9 | 2.7KB | 0.292ms | 0.022ms | 0.792ms | 1.31ms | +0.510ms saved |
-| C | openzl-prose | 2.1KB | 2.98ms | 0.017ms | 3.48ms | 4.00ms | -2172.0µs saved |
-| C | openzl-serial | 3.5KB | 0.070ms | 0.028ms | 0.570ms | 1.10ms | +0.726ms saved |
+| C | gzip-9 | 2.7KB | 0.293ms | 0.022ms | 0.793ms | 1.32ms | +0.509ms saved |
+| C | openzl-prose | 2.1KB | 0.100ms | 0.017ms | 0.600ms | 1.12ms | +0.707ms saved |
+| C | openzl-serial | 3.5KB | 0.068ms | 0.028ms | 0.568ms | 1.10ms | +0.727ms saved |
 | C | zstd-1 | 1.9KB | 0.028ms | 0.016ms | 0.528ms | 1.04ms | +0.780ms saved |
-| C | zstd-19 | 1.8KB | 15.20ms | 0.015ms | 15.70ms | 16.22ms | -14393.9µs saved |
-| C | zstd-3 | 2.0KB | 0.067ms | 0.016ms | 0.567ms | 1.08ms | +0.741ms saved |
-| D | brotli-11 | 21.3KB | 93.60ms | 0.174ms | 94.10ms | 94.77ms | -92952.9µs saved |
-| D | brotli-4 | 30.9KB | 0.803ms | 0.253ms | 1.30ms | 2.06ms | -236.8µs saved |
-| D | gzip-1 | 37.3KB | 0.502ms | 0.305ms | 1.00ms | 1.81ms | +0.012ms saved |
-| D | gzip-6 | 32.8KB | 2.30ms | 0.269ms | 2.80ms | 3.57ms | -1752.1µs saved |
-| D | gzip-9 | 32.0KB | 11.41ms | 0.262ms | 11.91ms | 12.68ms | -10857.7µs saved |
-| D | openzl-serial | 33.3KB | 0.365ms | 0.273ms | 0.865ms | 1.64ms | +0.181ms saved |
-| D | zstd-1 | 28.2KB | 0.193ms | 0.231ms | 0.693ms | 1.42ms | +0.395ms saved |
-| D | zstd-19 | 28.0KB | 20.81ms | 0.230ms | 21.31ms | 22.04ms | -20225.1µs saved |
-| D | zstd-3 | 32.3KB | 0.276ms | 0.265ms | 0.776ms | 1.54ms | +0.278ms saved |
-| E-100kb | brotli-11 | 3.0KB | 122.6ms | 0.025ms | 123.1ms | 123.6ms | -121818.7µs saved |
-| E-100kb | brotli-4 | 5.0KB | 0.232ms | 0.041ms | 0.732ms | 1.27ms | +0.546ms saved |
-| E-100kb | gzip-1 | 8.9KB | 0.105ms | 0.073ms | 0.605ms | 1.18ms | +0.641ms saved |
-| E-100kb | gzip-6 | 6.0KB | 0.337ms | 0.049ms | 0.837ms | 1.39ms | +0.433ms saved |
-| E-100kb | gzip-9 | 5.9KB | 0.674ms | 0.048ms | 1.17ms | 1.72ms | +0.097ms saved |
-| E-100kb | openzl-api-list | 4.7KB | 3.19ms | 0.038ms | 3.69ms | 4.23ms | -2406.2µs saved |
-| E-100kb | openzl-serial | 9.0KB | 0.137ms | 0.073ms | 0.637ms | 1.21ms | +0.610ms saved |
-| E-100kb | zstd-1 | 5.2KB | 0.058ms | 0.042ms | 0.558ms | 1.10ms | +0.720ms saved |
-| E-100kb | zstd-19 | 3.8KB | 38.17ms | 0.031ms | 38.67ms | 39.20ms | -37384.7µs saved |
-| E-100kb | zstd-3 | 5.5KB | 0.083ms | 0.045ms | 0.583ms | 1.13ms | +0.692ms saved |
-| E-1kb | brotli-11 | 265B | 1.27ms | 2.1µs | 1.77ms | 2.27ms | -1260.9µs saved |
-| E-1kb | brotli-4 | 303B | 0.019ms | 2.4µs | 0.519ms | 1.02ms | -12.6µs saved |
-| E-1kb | gzip-1 | 344B | 0.012ms | 2.8µs | 0.512ms | 1.01ms | -5.7µs saved |
-| E-1kb | gzip-6 | 332B | 0.014ms | 2.7µs | 0.514ms | 1.02ms | -7.5µs saved |
-| E-1kb | gzip-9 | 332B | 0.013ms | 2.7µs | 0.513ms | 1.02ms | -7.2µs saved |
-| E-1kb | openzl-api-list | 348B | 2.42ms | 2.8µs | 2.92ms | 3.43ms | -2416.2µs saved |
-| E-1kb | openzl-serial | 447B | 0.023ms | 3.6µs | 0.523ms | 1.03ms | -17.4µs saved |
+| C | zstd-19 | 1.8KB | 14.98ms | 0.015ms | 15.48ms | 16.00ms | -14171.8µs saved |
+| C | zstd-3 | 2.0KB | 0.057ms | 0.016ms | 0.557ms | 1.07ms | +0.751ms saved |
+| D | brotli-11 | 21.3KB | 100.5ms | 0.174ms | 101.0ms | 101.7ms | -99856.1µs saved |
+| D | brotli-4 | 30.9KB | 0.809ms | 0.253ms | 1.31ms | 2.06ms | -243.1µs saved |
+| D | gzip-1 | 37.3KB | 0.493ms | 0.305ms | 0.993ms | 1.80ms | +0.021ms saved |
+| D | gzip-6 | 32.8KB | 2.25ms | 0.269ms | 2.75ms | 3.52ms | -1702.8µs saved |
+| D | gzip-9 | 32.0KB | 11.35ms | 0.262ms | 11.85ms | 12.61ms | -10792.9µs saved |
+| D | openzl-serial | 33.3KB | 0.369ms | 0.273ms | 0.869ms | 1.64ms | +0.177ms saved |
+| D | zstd-1 | 28.2KB | 0.211ms | 0.231ms | 0.711ms | 1.44ms | +0.377ms saved |
+| D | zstd-19 | 28.0KB | 20.88ms | 0.230ms | 21.38ms | 22.11ms | -20290.9µs saved |
+| D | zstd-3 | 32.3KB | 0.305ms | 0.265ms | 0.805ms | 1.57ms | +0.250ms saved |
+| E-100kb | brotli-11 | 3.0KB | 123.6ms | 0.025ms | 124.1ms | 124.7ms | -122854.6µs saved |
+| E-100kb | brotli-4 | 5.0KB | 0.231ms | 0.041ms | 0.731ms | 1.27ms | +0.548ms saved |
+| E-100kb | gzip-1 | 8.9KB | 0.115ms | 0.073ms | 0.615ms | 1.19ms | +0.632ms saved |
+| E-100kb | gzip-6 | 6.0KB | 0.336ms | 0.049ms | 0.836ms | 1.38ms | +0.435ms saved |
+| E-100kb | gzip-9 | 5.9KB | 0.668ms | 0.048ms | 1.17ms | 1.72ms | +0.103ms saved |
+| E-100kb | openzl-api-list | 4.7KB | 0.266ms | 0.038ms | 0.766ms | 1.30ms | +0.516ms saved |
+| E-100kb | openzl-serial | 9.0KB | 0.134ms | 0.073ms | 0.634ms | 1.21ms | +0.612ms saved |
+| E-100kb | zstd-1 | 5.2KB | 0.055ms | 0.042ms | 0.555ms | 1.10ms | +0.722ms saved |
+| E-100kb | zstd-19 | 3.8KB | 38.16ms | 0.031ms | 38.66ms | 39.19ms | -37367.4µs saved |
+| E-100kb | zstd-3 | 5.5KB | 0.064ms | 0.045ms | 0.564ms | 1.11ms | +0.710ms saved |
+| E-1kb | brotli-11 | 265B | 1.25ms | 2.1µs | 1.75ms | 2.25ms | -1246.1µs saved |
+| E-1kb | brotli-4 | 303B | 0.019ms | 2.4µs | 0.519ms | 1.02ms | -12.8µs saved |
+| E-1kb | gzip-1 | 344B | 0.012ms | 2.8µs | 0.512ms | 1.01ms | -5.9µs saved |
+| E-1kb | gzip-6 | 332B | 0.014ms | 2.7µs | 0.514ms | 1.02ms | -7.4µs saved |
+| E-1kb | gzip-9 | 332B | 0.014ms | 2.7µs | 0.514ms | 1.02ms | -7.4µs saved |
+| E-1kb | openzl-api-list | 348B | 0.019ms | 2.8µs | 0.519ms | 1.02ms | -12.9µs saved |
+| E-1kb | openzl-serial | 447B | 0.023ms | 3.6µs | 0.523ms | 1.03ms | -17.6µs saved |
 | E-1kb | zstd-1 | 332B | 8.4µs | 2.7µs | 0.508ms | 1.01ms | -2.2µs saved |
-| E-1kb | zstd-19 | 318B | 0.129ms | 2.5µs | 0.629ms | 1.13ms | -122.6µs saved |
-| E-1kb | zstd-3 | 328B | 8.7µs | 2.6µs | 0.509ms | 1.01ms | -2.5µs saved |
-| E-1mb | brotli-11 | 12.1KB | 1563.9ms | 0.099ms | 1564.4ms | 1565.0ms | -1555593.5µs saved |
-| E-1mb | brotli-4 | 31.5KB | 1.89ms | 0.258ms | 2.39ms | 3.14ms | +6.24ms saved |
-| E-1mb | gzip-1 | 87.1KB | 1.16ms | 0.714ms | 1.66ms | 2.88ms | +6.51ms saved |
-| E-1mb | gzip-6 | 54.8KB | 3.57ms | 0.449ms | 4.07ms | 5.02ms | +4.37ms saved |
-| E-1mb | gzip-9 | 52.7KB | 7.60ms | 0.432ms | 8.10ms | 9.03ms | +0.354ms saved |
-| E-1mb | openzl-api-list | 22.5KB | 8.61ms | 0.184ms | 9.11ms | 9.80ms | -408.1µs saved |
-| E-1mb | openzl-serial | 80.1KB | 1.11ms | 0.656ms | 1.61ms | 2.77ms | +6.62ms saved |
-| E-1mb | zstd-1 | 20.9KB | 0.365ms | 0.171ms | 0.865ms | 1.54ms | +7.85ms saved |
-| E-1mb | zstd-19 | 14.7KB | 527.2ms | 0.120ms | 527.7ms | 528.3ms | -518927.4µs saved |
-| E-1mb | zstd-3 | 27.1KB | 0.437ms | 0.222ms | 0.937ms | 1.66ms | +7.73ms saved |
-| F | brotli-11 | 33.2KB | 246.1ms | 0.272ms | 246.6ms | 247.4ms | -245550.0µs saved |
-| F | brotli-4 | 48.5KB | 1.49ms | 0.397ms | 1.99ms | 2.89ms | -1069.7µs saved |
-| F | gzip-1 | 63.8KB | 1.16ms | 0.523ms | 1.66ms | 2.69ms | -865.8µs saved |
-| F | gzip-6 | 62.9KB | 2.99ms | 0.516ms | 3.49ms | 4.50ms | -2685.4µs saved |
-| F | gzip-9 | 62.9KB | 4.14ms | 0.516ms | 4.64ms | 5.66ms | -3841.2µs saved |
-| F | openzl-binary | 13.8KB | 3.62ms | 0.113ms | 4.12ms | 4.73ms | -2915.5µs saved |
-| F | openzl-binary-le-u32 | 7.5KB | 4.61ms | 0.061ms | 5.11ms | 5.67ms | -3847.7µs saved |
-| F | openzl-serial | 64.7KB | 0.146ms | 0.530ms | 0.646ms | 1.68ms | +0.143ms saved |
-| F | zstd-1 | 47.7KB | 0.210ms | 0.391ms | 0.710ms | 1.60ms | +0.219ms saved |
-| F | zstd-19 | 51.3KB | 12.86ms | 0.421ms | 13.36ms | 14.28ms | -12460.3µs saved |
-| F | zstd-3 | 52.5KB | 0.295ms | 0.430ms | 0.795ms | 1.73ms | +0.094ms saved |
+| E-1kb | zstd-19 | 318B | 0.129ms | 2.5µs | 0.629ms | 1.13ms | -122.9µs saved |
+| E-1kb | zstd-3 | 328B | 9.2µs | 2.6µs | 0.509ms | 1.01ms | -2.9µs saved |
+| E-1mb | brotli-11 | 12.1KB | 1594.2ms | 0.099ms | 1594.7ms | 1595.3ms | -1585909.6µs saved |
+| E-1mb | brotli-4 | 31.5KB | 1.87ms | 0.258ms | 2.37ms | 3.12ms | +6.27ms saved |
+| E-1mb | gzip-1 | 87.1KB | 1.17ms | 0.714ms | 1.67ms | 2.88ms | +6.51ms saved |
+| E-1mb | gzip-6 | 54.8KB | 3.51ms | 0.449ms | 4.01ms | 4.96ms | +4.43ms saved |
+| E-1mb | gzip-9 | 52.7KB | 7.55ms | 0.432ms | 8.05ms | 8.98ms | +0.408ms saved |
+| E-1mb | openzl-api-list | 22.5KB | 2.23ms | 0.184ms | 2.73ms | 3.42ms | +5.97ms saved |
+| E-1mb | openzl-serial | 80.1KB | 1.12ms | 0.656ms | 1.62ms | 2.78ms | +6.61ms saved |
+| E-1mb | zstd-1 | 20.9KB | 0.404ms | 0.171ms | 0.904ms | 1.58ms | +7.81ms saved |
+| E-1mb | zstd-19 | 14.7KB | 544.6ms | 0.120ms | 545.1ms | 545.8ms | -536380.3µs saved |
+| E-1mb | zstd-3 | 27.1KB | 0.584ms | 0.222ms | 1.08ms | 1.81ms | +7.58ms saved |
+| F | brotli-11 | 33.2KB | 246.6ms | 0.272ms | 247.1ms | 247.9ms | -246081.7µs saved |
+| F | brotli-4 | 48.5KB | 1.48ms | 0.397ms | 1.98ms | 2.88ms | -1062.6µs saved |
+| F | gzip-1 | 63.8KB | 1.18ms | 0.523ms | 1.68ms | 2.71ms | -886.0µs saved |
+| F | gzip-6 | 62.9KB | 2.99ms | 0.516ms | 3.49ms | 4.50ms | -2682.8µs saved |
+| F | gzip-9 | 62.9KB | 4.13ms | 0.516ms | 4.63ms | 5.64ms | -3822.9µs saved |
+| F | openzl-binary | 13.8KB | 0.615ms | 0.113ms | 1.11ms | 1.73ms | +0.091ms saved |
+| F | openzl-binary-le-u32 | 7.5KB | 1.50ms | 0.061ms | 2.00ms | 2.56ms | -743.4µs saved |
+| F | openzl-binary-sddl | 6.4KB | 0.728ms | 0.052ms | 1.23ms | 1.78ms | +0.039ms saved |
+| F | openzl-serial | 64.7KB | 0.142ms | 0.530ms | 0.642ms | 1.67ms | +0.147ms saved |
+| F | zstd-1 | 47.7KB | 0.186ms | 0.391ms | 0.686ms | 1.58ms | +0.242ms saved |
+| F | zstd-19 | 51.3KB | 12.96ms | 0.421ms | 13.46ms | 14.38ms | -12559.4µs saved |
+| F | zstd-3 | 52.5KB | 0.319ms | 0.430ms | 0.819ms | 1.75ms | +0.070ms saved |
 
 ## Reading the baseline
 

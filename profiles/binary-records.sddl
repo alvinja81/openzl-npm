@@ -1,0 +1,10 @@
+# Corpus F — fixed-width 16-byte records (bench/corpora.ts corpusF)
+record Sample() {
+  id:      UInt32LE,   # sequential
+  counter: UInt32LE,   # (i*17) % 1e6
+  value:   Float32LE,  # sine wave
+  sensor:  UInt16LE,   # i % 8
+  flag:    UInt16LE    # 0/1
+}
+
+samples: Sample[]

@@ -10,6 +10,23 @@
 | D compact | 102417 | 33575 (32.8%) | 33066 (32.3%) | 34131 (33.3%) | — | — | — |
 | F binary-records | 102400 | 64456 (62.9%) | 53797 (52.5%) | 66234 (64.7%) | **14170 (13.8%)** | binary | **−78.6%** |
 | F binary-records | 102400 | 64456 (62.9%) | 53797 (52.5%) | 66234 (64.7%) | **7662 (7.5%)** | binary-le-u32 | **−88.4%** |
+| F binary-records | 102400 | 64456 (62.9%) | 53797 (52.5%) | 66234 (64.7%) | **6525 (6.4%)** | binary-sddl | **−90.1%** |
+
+### The shape ladder (corpus F, 100KB heldout)
+
+Same data, increasing amounts of declared structure:
+
+| What we told OpenZL | Compressor | Bytes | Ratio |
+|---|---|---:|---:|
+| nothing (zstd L19 for reference) | — | 52571 | 51.3% |
+| "mystery bytes" + training | binary (serial-trained) | 14170 | 13.8% |
+| "little-endian 32-bit words" + training | binary-le-u32 | 7662 | 7.5% |
+| exact 16-byte record layout (SDDL) + training | binary-sddl | 6525 | **6.4%** |
+
+**Every bit of shape declared up front multiplies what training finds.**
+binary-sddl encodes in ~0.9ms via the native addon (in-process deserialize).
+Note: its frame needs the native addon or a recent zli to decode — the packaged
+zli 0.1 binary is too old.
 
 ## Finding
 

@@ -42,6 +42,14 @@
       "baseProfile": "le-u32",
       "description": "Trained le-u32 profile on fixed-width binary (best ratio on typed binary).",
       "recommendedFor": ["little-endian u32 arrays", "packed numeric records"]
+    },
+    "binary-sddl": {
+      "type": "trained",
+      "file": "binary-sddl.zlc",
+      "baseProfile": "sddl2",
+      "sddlFile": "binary-records.sddl",
+      "description": "Trained sddl2 profile with exact 16-byte record layout (binary-records.sddl). Best ratio on corpus F: 6.4% vs zstd L19 51.3%. Frame requires native addon or a recent zli to decode (packaged zli 0.1 cannot).",
+      "recommendedFor": ["fixed-width records with known layout"]
     }
   }
 }
