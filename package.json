@@ -56,7 +56,8 @@
     "docs/RELEASE.md",
     "docs/COMPAT.md",
     "docs/BROWSER.md",
-    "docs/FLAGSHIP.md"
+    "docs/FLAGSHIP.md",
+    "docs/charts"
   ],
   "scripts": {
     "build": "tsc",
