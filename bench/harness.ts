@@ -143,6 +143,16 @@ export async function runMatrix(
   for (const corpus of corpora) {
     for (const codec of codecs) {
       done++;
+      // Shape-specific trained codecs only run on matching corpora
+      // (e.g. le-u32 rejects unaligned JSON — an error row would be noise).
+      if (
+        codec.bestFor &&
+        !codec.bestFor.some(
+          (tag) => corpus.id.startsWith(tag) || corpus.name.includes(tag)
+        )
+      ) {
+        continue;
+      }
       onProgress?.(
         `[${done}/${total}] ${corpus.id}/${corpus.name} × ${codec.id} (${corpus.bytes.length} bytes)`
       );

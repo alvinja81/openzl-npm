@@ -32,7 +32,8 @@ export type CodecId =
   | 'openzl-timeseries'
   | 'openzl-api-list'
   | 'openzl-prose'
-  | 'openzl-binary';
+  | 'openzl-binary'
+  | 'openzl-binary-le-u32';
 
 export type Codec = {
   id: CodecId;
@@ -96,7 +97,8 @@ export const CODECS: Codec[] = [
   openzlProfile('openzl-timeseries', 'openzl timeseries', 'timeseries', ['B', 'timeseries']),
   openzlProfile('openzl-api-list', 'openzl api-list', 'api-list', ['A', 'api-list', 'E-']),
   openzlProfile('openzl-prose', 'openzl prose', 'prose', ['C', 'prose']),
-  openzlProfile('openzl-binary', 'openzl binary', 'binary', ['F', 'binary'])
+  openzlProfile('openzl-binary', 'openzl binary', 'binary', ['F', 'binary']),
+  openzlProfile('openzl-binary-le-u32', 'openzl binary le-u32', 'binary-le-u32', ['F', 'binary'])
 ];
 
 export const isZstdAvailable = (): boolean => {
