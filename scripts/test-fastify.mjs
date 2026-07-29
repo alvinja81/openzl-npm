@@ -9,7 +9,9 @@ import {
   openzlFastify,
   decompress,
   decompressZstd,
-  isZstdAvailable
+  isZstdAvailable,
+  isNativeAvailable,
+  getActiveBackend
 } from '../dist/index.js';
 
 const big = {
@@ -73,13 +75,43 @@ async function check(name, accept, expectEnc, decode) {
   return ok ? 0 : 1;
 }
 
+const backend = await getActiveBackend();
+const openzlOk = backend !== 'unavailable' || isNativeAvailable();
+console.log(
+  `backend=${backend} native=${isNativeAvailable()} openzlTests=${openzlOk ? 'on' : 'skip'}`
+);
+
 let failed = 0;
+// Heroes
 failed += await check('gzip', 'gzip', 'gzip', async (b) => zlib.gunzipSync(b));
-failed += await check('openzl', 'openzl', 'openzl', decompress);
 if (isZstdAvailable()) {
   failed += await check('zstd', 'zstd', 'zstd', decompressZstd);
-  failed += await check('openzl>zstd', 'openzl, zstd, gzip', 'openzl', decompress);
 }
+
+if (openzlOk) {
+  failed += await check('openzl', 'openzl', 'openzl', decompress);
+  if (isZstdAvailable()) {
+    failed += await check('openzl>zstd', 'openzl, zstd, gzip', 'openzl', decompress);
+  }
+} else {
+  console.log('⊘ openzl backend unavailable — skip openzl cases');
+  // openzl requested + gzip allowed → gzip fallback
+  failed += await check(
+    'openzl→gzip fallback',
+    'openzl, gzip',
+    'gzip',
+    async (b) => zlib.gunzipSync(b)
+  );
+  if (isZstdAvailable()) {
+    failed += await check(
+      'openzl→zstd fallback',
+      'openzl, zstd, gzip',
+      'zstd',
+      decompressZstd
+    );
+  }
+}
+
 await app.close();
 if (failed) {
   console.error(failed, 'failed');

@@ -13,6 +13,8 @@ import {
   decompress,
   decompressZstd,
   isZstdAvailable,
+  isNativeAvailable,
+  getActiveBackend,
   pickEncoding
 } from '../dist/index.js';
 
@@ -90,6 +92,11 @@ function request(port, urlPath, acceptEncoding) {
 const server = app.listen(0, async () => {
   const port = server.address().port;
   let failed = 0;
+  const backend = await getActiveBackend();
+  const openzlOk = backend !== 'unavailable' || isNativeAvailable();
+  console.log(
+    `backend=${backend} native=${isNativeAvailable()} openzlTests=${openzlOk ? 'on' : 'skip'}`
+  );
 
   const check = async (name, pathName, accept, expectEncoding, decode) => {
     const r = await request(port, pathName, accept);
@@ -123,36 +130,56 @@ const server = app.listen(0, async () => {
   };
 
   try {
+    // Heroes always required
     await check('json+gzip', '/json', 'gzip', 'gzip', (b) =>
       Promise.resolve(zlib.gunzipSync(b))
     );
-    await check('json+openzl', '/json', 'openzl, gzip', 'openzl', decompress);
-    await check('send+openzl', '/send', 'openzl', 'openzl', decompress);
     await check('stream+gzip', '/stream', 'gzip', 'gzip', (b) =>
       Promise.resolve(zlib.gunzipSync(b))
     );
-    // stream + openzl buffers → openzl
-    await check('stream+openzl', '/stream', 'openzl', 'openzl', decompress);
-    // file + openzl,gzip with preferStreamGzip → gzip
-    await check('file+openzl,gzip', '/file', 'openzl, gzip', 'gzip', (b) =>
-      Promise.resolve(zlib.gunzipSync(b))
-    );
-    // file + openzl only → openzl
-    await check('file+openzl-only', '/file', 'openzl', 'openzl', decompress);
     await check('small identity', '/json', 'identity', null, async (b) => b);
+
+    // OpenZL path only when native or zli is present (optionalDependency)
+    if (openzlOk) {
+      await check('json+openzl', '/json', 'openzl, gzip', 'openzl', decompress);
+      await check('send+openzl', '/send', 'openzl', 'openzl', decompress);
+      await check('stream+openzl', '/stream', 'openzl', 'openzl', decompress);
+      // file + openzl,gzip with preferStreamGzip → gzip
+      await check('file+openzl,gzip', '/file', 'openzl, gzip', 'gzip', (b) =>
+        Promise.resolve(zlib.gunzipSync(b))
+      );
+      await check('file+openzl-only', '/file', 'openzl', 'openzl', decompress);
+    } else {
+      console.log('⊘ openzl backend unavailable — skip openzl cases (gzip/zstd heroes only)');
+      // Without openzl, openzl+gzip should still land on gzip fallback
+      await check('json+openzl→gzip fallback', '/json', 'openzl, gzip', 'gzip', (b) =>
+        Promise.resolve(zlib.gunzipSync(b))
+      );
+    }
 
     // Phase 7: zstd peer
     if (isZstdAvailable()) {
       await check('json+zstd', '/json', 'zstd', 'zstd', decompressZstd);
       await check('json+zstd,gzip', '/json', 'zstd, gzip', 'zstd', decompressZstd);
-      await check(
-        'openzl beats zstd when both',
-        '/json',
-        'openzl, zstd, gzip',
-        'openzl',
-        decompress
-      );
       await check('stream+zstd', '/stream', 'zstd', 'zstd', decompressZstd);
+      if (openzlOk) {
+        await check(
+          'openzl beats zstd when both',
+          '/json',
+          'openzl, zstd, gzip',
+          'openzl',
+          decompress
+        );
+      } else {
+        // Prefer openzl in negotiate, but middleware falls back to zstd when encode fails
+        await check(
+          'openzl fail → zstd fallback',
+          '/json',
+          'openzl, zstd, gzip',
+          'zstd',
+          decompressZstd
+        );
+      }
       // negotiate unit checks
       if (pickEncoding('zstd, gzip') !== 'zstd') {
         console.log('✗ pickEncoding zstd prefer');

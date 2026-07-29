@@ -27,10 +27,11 @@ jobs:
         run: npm ci || npm install
       - name: Build TypeScript
         run: npm run build
-      - name: Unit / adapter tests
+      - name: Unit / adapter / trust tests
         run: |
           node scripts/test-middleware.mjs
           node scripts/test-fastify.mjs
+          node scripts/test-trust.mjs
       - name: Release check
         run: node scripts/release-check.mjs
       - name: Pack + install smoke

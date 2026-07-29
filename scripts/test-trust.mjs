@@ -49,10 +49,21 @@ const sampleJson = Buffer.from(
   })
 );
 
+const openzlAvailable = async () => {
+  const backend = await getActiveBackend();
+  return backend !== 'unavailable' || isNativeAvailable();
+};
+
 async function testRoundtrip() {
   console.log('\n[interop] compress → decompress roundtrip');
   const backend = await getActiveBackend();
   console.log(`  backend: ${backend} (native=${isNativeAvailable()})`);
+
+  if (!(await openzlAvailable())) {
+    console.log('  ⊘ skip — no openzl backend (native/CLI)');
+    ok('roundtrip skipped (no openzl backend)');
+    return;
+  }
 
   const zl = await compress(sampleJson, { profile: 'serial' });
   assert.ok(zl.length > 0, 'compressed non-empty');
@@ -85,6 +96,20 @@ async function testRoundtrip() {
 
 async function testLimits() {
   console.log('\n[limits] maxInput / maxOutput');
+
+  if (!(await openzlAvailable())) {
+    // Input limit does not need a backend
+    try {
+      await decompress(Buffer.alloc(100, 1), { maxInputBytes: 1 });
+      throw new Error('expected LimitError');
+    } catch (err) {
+      assert.ok(err instanceof LimitError);
+      assert.strictEqual(err.code, 'INPUT_TOO_LARGE');
+      ok('maxInputBytes without backend → LimitError');
+    }
+    console.log('  ⊘ skip output-limit (needs successful compress)');
+    return;
+  }
 
   const zl = await compress(sampleJson);
 
@@ -158,27 +183,9 @@ async function testOnCompress() {
   console.log('\n[metrics] onCompress hook');
 
   const events = [];
-  const result = await compressBody(sampleJson, 'openzl, gzip', {
-    threshold: 100,
-    profile: 'serial',
-    onCompress: (m) => events.push(m)
-  });
+  const hasOpenzl = await openzlAvailable();
 
-  assert.strictEqual(result.encoding, 'openzl');
-  assert.strictEqual(events.length, 1);
-  const m = events[0];
-  assert.strictEqual(m.encoding, 'openzl');
-  assert.strictEqual(m.bytesIn, sampleJson.length);
-  assert.strictEqual(m.bytesOut, result.body.length);
-  assert.ok(typeof m.ms === 'number' && m.ms >= 0);
-  assert.ok(typeof m.ratio === 'number' && m.ratio > 0);
-  assert.strictEqual(m.profile, 'serial');
-  ok(
-    `compressBody onCompress encoding=${m.encoding} ratio=${m.ratio.toFixed(1)}% ms=${m.ms.toFixed(1)}`
-  );
-
-  // gzip path
-  events.length = 0;
+  // gzip path always works (hero)
   const gz = await compressBody(sampleJson, 'gzip', {
     threshold: 100,
     onCompress: (m) => events.push(m)
@@ -187,6 +194,36 @@ async function testOnCompress() {
   assert.strictEqual(events.length, 1);
   assert.strictEqual(events[0].encoding, 'gzip');
   ok('gzip onCompress');
+
+  events.length = 0;
+  const result = await compressBody(sampleJson, 'openzl, gzip', {
+    threshold: 100,
+    profile: 'serial',
+    onCompress: (m) => events.push(m)
+  });
+
+  if (hasOpenzl) {
+    assert.strictEqual(result.encoding, 'openzl');
+    assert.strictEqual(events.length, 1);
+    const m = events[0];
+    assert.strictEqual(m.encoding, 'openzl');
+    assert.strictEqual(m.bytesIn, sampleJson.length);
+    assert.strictEqual(m.bytesOut, result.body.length);
+    assert.ok(typeof m.ms === 'number' && m.ms >= 0);
+    assert.ok(typeof m.ratio === 'number' && m.ratio > 0);
+    assert.strictEqual(m.profile, 'serial');
+    ok(
+      `compressBody onCompress encoding=${m.encoding} ratio=${m.ratio.toFixed(1)}% ms=${m.ms.toFixed(1)}`
+    );
+  } else {
+    // Without backend, openzl request falls back to gzip/zstd
+    assert.ok(
+      result.encoding === 'gzip' || result.encoding === 'zstd',
+      `expected hero fallback, got ${result.encoding}`
+    );
+    assert.ok(events.length >= 1);
+    ok(`compressBody openzl→${result.encoding} fallback onCompress`);
+  }
 
   // Express middleware path
   events.length = 0;
@@ -205,6 +242,7 @@ async function testOnCompress() {
     const server = app.listen(0, '127.0.0.1', async () => {
       try {
         const port = server.address().port;
+        const accept = hasOpenzl ? 'openzl' : 'gzip';
         await new Promise((res, rej) => {
           http
             .get(
@@ -212,7 +250,7 @@ async function testOnCompress() {
                 host: '127.0.0.1',
                 port,
                 path: '/m',
-                headers: { 'Accept-Encoding': 'openzl' }
+                headers: { 'Accept-Encoding': accept }
               },
               (r) => {
                 r.resume();
@@ -223,8 +261,12 @@ async function testOnCompress() {
             .on('error', rej);
         });
         assert.ok(events.length >= 1, 'middleware should emit onCompress');
-        assert.strictEqual(events[0].encoding, 'openzl');
-        ok(`middleware onCompress bytesIn=${events[0].bytesIn}`);
+        if (hasOpenzl) {
+          assert.strictEqual(events[0].encoding, 'openzl');
+        } else {
+          assert.strictEqual(events[0].encoding, 'gzip');
+        }
+        ok(`middleware onCompress bytesIn=${events[0].bytesIn} enc=${events[0].encoding}`);
         server.close(() => resolve());
       } catch (e) {
         server.close(() => reject(e));

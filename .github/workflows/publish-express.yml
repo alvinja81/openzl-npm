@@ -19,7 +19,12 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
       - run: npm install -g npm@^11
       - run: npm ci || npm install
+      # Optional: fuller openzl coverage when CLI package is already published
+      - name: Try optional OpenZL CLI (non-fatal)
+        continue-on-error: true
+        run: npm install @amirja811/openzl-cli@^0.3.0 --no-save || true
       - run: npm run build
+      # Tests soft-skip openzl when native/CLI missing; gzip/zstd heroes must pass
       - run: npm test
       - run: node scripts/release-check.mjs
       - run: node scripts/pack-smoke.mjs

@@ -1,6 +1,6 @@
 {
   "name": "openzl-express",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Multi-codec HTTP compression (openzl · zstd · gzip) — core + Express + Fastify adapters",
   "type": "module",
   "main": "dist/index.js",

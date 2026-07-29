@@ -5,6 +5,15 @@ All notable changes to this project are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project follows [Semantic Versioning](https://semver.org/) for the `0.x` line (breaking changes allowed with minor bumps until 1.0).
 
+## [0.4.1] — 2026-07-29
+
+### Fixed
+- CI / npm publish: smoke tests **soft-skip openzl** when native/CLI are missing; **gzip/zstd heroes still required**.
+- Publish workflow continues when optional `@amirja811/openzl-cli` is absent.
+
+### Notes
+- First successful Series 2 publish target (0.4.0 tag existed but CI failed before npm).
+
 ## [0.4.0] — 2026-07-28
 
 ### Added
@@ -60,5 +69,6 @@ This project follows [Semantic Versioning](https://semver.org/) for the `0.x` li
 
 ---
 
+[0.4.1]: https://github.com/alvinja81/openzl-npm/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/alvinja81/openzl-npm/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/alvinja81/openzl-npm/releases/tag/v0.3.0
