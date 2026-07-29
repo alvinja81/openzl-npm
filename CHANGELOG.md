@@ -5,6 +5,11 @@ All notable changes to this project are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project follows [Semantic Versioning](https://semver.org/) for the `0.x` line (breaking changes allowed with minor bumps until 1.0).
 
+## [0.4.2] — 2026-07-29
+
+### Changed
+- **README** rewritten for npm consumers: install, 30s start, copy-paste test curls, negotiation table, options, train path. Internal roadmap moved out of the primary doc.
+
 ## [0.4.1] — 2026-07-29
 
 ### Fixed
@@ -12,7 +17,7 @@ This project follows [Semantic Versioning](https://semver.org/) for the `0.x` li
 - Publish workflow continues when optional `@amirja811/openzl-cli` is absent.
 
 ### Notes
-- First successful Series 2 publish target (0.4.0 tag existed but CI failed before npm).
+- First successful Series 2 publish (0.4.0 tag existed but CI failed before npm).
 
 ## [0.4.0] — 2026-07-28
 
@@ -69,6 +74,7 @@ This project follows [Semantic Versioning](https://semver.org/) for the `0.x` li
 
 ---
 
+[0.4.2]: https://github.com/alvinja81/openzl-npm/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/alvinja81/openzl-npm/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/alvinja81/openzl-npm/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/alvinja81/openzl-npm/releases/tag/v0.3.0
