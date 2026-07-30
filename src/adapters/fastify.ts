@@ -14,6 +14,7 @@ import fp from 'fastify-plugin';
 import type { FastifyPluginAsync, FastifyRequest, FastifyReply } from 'fastify';
 import { Readable } from 'stream';
 import {
+  isBrotliAvailable,
   isZstdAvailable,
   pickEncoding
 } from '../core/index.js';
@@ -74,6 +75,8 @@ const plugin: FastifyPluginAsync<OpenZLFastifyOptions> = async (
     profile = 'serial',
     allowZstd = isZstdAvailable(),
     zstdLevel,
+    allowBrotli = isBrotliAvailable(),
+    brotliQuality,
     debug = false,
     filter,
     selectProfile,
@@ -108,7 +111,8 @@ const plugin: FastifyPluginAsync<OpenZLFastifyOptions> = async (
 
     const accept = request.headers['accept-encoding'];
     const probe = pickEncoding(accept, {
-      allowZstd: allowZstd && isZstdAvailable()
+      allowZstd: allowZstd && isZstdAvailable(),
+      allowBrotli: allowBrotli && isBrotliAvailable()
     });
     if (probe === 'identity') return payload;
 
@@ -130,6 +134,8 @@ const plugin: FastifyPluginAsync<OpenZLFastifyOptions> = async (
         profile,
         allowZstd,
         zstdLevel,
+        allowBrotli,
+        brotliQuality,
         onCompress,
         selectProfile: (size) => selectProfile?.(request, size)
       });

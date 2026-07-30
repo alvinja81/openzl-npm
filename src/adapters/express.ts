@@ -4,10 +4,13 @@ import fs from 'fs';
 import { finished, Writable } from 'stream';
 import {
   compress,
+  compressBrotli,
   compressGzip,
   compressZstd,
+  createBrotliStream,
   createGzipStream,
   createZstdStream,
+  isBrotliAvailable,
   isZstdAvailable,
   pickEncoding,
   type ContentEncoding
@@ -45,7 +48,9 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
     filter,
     preferStreamGzip = true,
     allowZstd = isZstdAvailable(),
-    zstdLevel
+    zstdLevel,
+    allowBrotli = isBrotliAvailable(),
+    brotliQuality
   } = options;
 
   const reportCompress = (
@@ -86,6 +91,7 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
   const pick = (accept: string | string[] | undefined, extra = {}) =>
     pickEncoding(accept, {
       allowZstd: allowZstd && isZstdAvailable(),
+      allowBrotli: allowBrotli && isBrotliAvailable(),
       ...extra
     });
 
@@ -193,14 +199,18 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
       !hasNoTransform(res.getHeader('cache-control')) &&
       typeFilter(req, res);
 
-    const startStream = (which: 'gzip' | 'zstd'): void => {
+    const startStream = (which: 'gzip' | 'zstd' | 'br'): void => {
       if (codecStream) return;
       res.removeHeader('Content-Length');
       res.setHeader('Content-Encoding', which);
       let stream: Transform;
       try {
         stream =
-          which === 'zstd' ? createZstdStream(zstdLevel) : createGzipStream();
+          which === 'zstd'
+            ? createZstdStream(zstdLevel)
+            : which === 'br'
+              ? createBrotliStream(brotliQuality)
+              : createGzipStream();
       } catch {
         log(`${which} stream unavailable, will buffer if needed`);
         mode = 'buffer';
@@ -267,7 +277,7 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
         return mode;
       }
 
-      if (encoding === 'gzip' || encoding === 'zstd') {
+      if (encoding === 'gzip' || encoding === 'zstd' || encoding === 'br') {
         // Buffer until threshold, then switch to streaming (see write hook)
         mode = 'collect';
         return mode;
@@ -280,7 +290,7 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
 
     const collectToStream = (): void => {
       mode = 'stream';
-      startStream(encoding === 'zstd' ? 'zstd' : 'gzip');
+      startStream(encoding === 'zstd' ? 'zstd' : encoding === 'br' ? 'br' : 'gzip');
       if (!codecStream) return; // startStream fell back to buffer mode
       const pending = chunks;
       chunks = [];
@@ -291,60 +301,42 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
       }
     };
 
+    /**
+     * OpenZL encode failed — renegotiate among the remaining codecs
+     * (zstd > br > gzip) and send the body with whichever the client accepts.
+     */
     const fallbackAfterOpenZL = async (
       body: Buffer,
       err: Error,
       started: number
     ): Promise<void> => {
-      // Prefer zstd then gzip when renegotiating without openzl
-      const nextEnc = pick(accept, { allowOpenZL: false });
-      if (nextEnc === 'zstd' && isZstdAvailable()) {
-        const out = await compressZstd(body, zstdLevel);
+      const sendAs = (enc: 'zstd' | 'br' | 'gzip', out: Buffer): void => {
         res.removeHeader('Content-Length');
-        res.setHeader('Content-Encoding', 'zstd');
+        res.setHeader('Content-Encoding', enc);
         res.setHeader('Content-Length', String(out.length));
-        res.setHeader('X-Compression-Fallback', 'zstd');
+        res.setHeader('X-Compression-Fallback', enc);
         res.setHeader('X-OpenZL-Error', err.name);
-        reportCompress('zstd', body.length, out.length, performance.now() - started, {
+        reportCompress(enc, body.length, out.length, performance.now() - started, {
           fallbackFrom: err.name
         });
         originalEnd(out);
         ended = true;
-        return;
+      };
+
+      if (fallbackToGzip) {
+        const nextEnc = pick(accept, { allowOpenZL: false });
+        if (nextEnc === 'zstd' && isZstdAvailable()) {
+          return sendAs('zstd', await compressZstd(body, zstdLevel));
+        }
+        if (nextEnc === 'br' && isBrotliAvailable()) {
+          return sendAs('br', await compressBrotli(body, brotliQuality));
+        }
+        if (nextEnc === 'gzip') {
+          return sendAs('gzip', await compressGzip(body));
+        }
       }
-      if (fallbackToGzip && (nextEnc === 'gzip' || nextEnc === 'identity')) {
-        // if identity only but fallbackToGzip, still try gzip when client accepts it
-      }
-      const canGzip =
-        fallbackToGzip && pick(accept, { allowOpenZL: false, allowZstd: false }) === 'gzip';
-      if (canGzip || (fallbackToGzip && pick(accept, { allowOpenZL: false }) === 'gzip')) {
-        const gz = await compressGzip(body);
-        res.removeHeader('Content-Length');
-        res.setHeader('Content-Encoding', 'gzip');
-        res.setHeader('Content-Length', String(gz.length));
-        res.setHeader('X-Compression-Fallback', 'gzip');
-        res.setHeader('X-OpenZL-Error', err.name);
-        reportCompress('gzip', body.length, gz.length, performance.now() - started, {
-          fallbackFrom: err.name
-        });
-        originalEnd(gz);
-        ended = true;
-        return;
-      }
-      if (fallbackToGzip && pick(accept, { allowOpenZL: false }) === 'zstd' && isZstdAvailable()) {
-        const out = await compressZstd(body, zstdLevel);
-        res.removeHeader('Content-Length');
-        res.setHeader('Content-Encoding', 'zstd');
-        res.setHeader('Content-Length', String(out.length));
-        res.setHeader('X-Compression-Fallback', 'zstd');
-        res.setHeader('X-OpenZL-Error', err.name);
-        reportCompress('zstd', body.length, out.length, performance.now() - started, {
-          fallbackFrom: err.name
-        });
-        originalEnd(out);
-        ended = true;
-        return;
-      }
+
+      // Fallback disabled, or the client accepts nothing else usable.
       originalEnd(body);
       ended = true;
     };
@@ -404,7 +396,7 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
         return;
       }
 
-      // zstd/gzip buffer fallback (stream failed to start)
+      // zstd/br/gzip buffer path (below-threshold collect, or stream failed to start)
       const bufStarted = performance.now();
       if (encoding === 'zstd' && isZstdAvailable()) {
         const out = await compressZstd(body, zstdLevel);
@@ -412,6 +404,17 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
         res.setHeader('Content-Encoding', 'zstd');
         res.setHeader('Content-Length', String(out.length));
         reportCompress('zstd', body.length, out.length, performance.now() - bufStarted);
+        originalEnd(out);
+        ended = true;
+        return;
+      }
+
+      if (encoding === 'br' && isBrotliAvailable()) {
+        const out = await compressBrotli(body, brotliQuality);
+        res.removeHeader('Content-Length');
+        res.setHeader('Content-Encoding', 'br');
+        res.setHeader('Content-Length', String(out.length));
+        reportCompress('br', body.length, out.length, performance.now() - bufStarted);
         originalEnd(out);
         ended = true;
         return;
@@ -569,7 +572,7 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
           const streamAlt = pick(accept, { allowOpenZL: false });
           if (
             preferStreamGzip &&
-            (streamAlt === 'gzip' || streamAlt === 'zstd')
+            (streamAlt === 'gzip' || streamAlt === 'zstd' || streamAlt === 'br')
           ) {
             log(`sendFile: preferStream → ${streamAlt} instead of openzl buffer`);
             encoding = streamAlt;

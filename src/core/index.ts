@@ -62,3 +62,11 @@ export {
   decompressZstd,
   createZstdStream
 } from './zstd.js';
+
+export {
+  isBrotliAvailable,
+  compressBrotli,
+  decompressBrotli,
+  createBrotliStream,
+  DEFAULT_BROTLI_QUALITY
+} from './brotli.js';

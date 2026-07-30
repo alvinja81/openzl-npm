@@ -2,10 +2,11 @@
  * HTTP content encodings this library can negotiate.
  * - openzl: OpenZL frame (clients must opt in explicitly — never via `*`)
  * - zstd: Zstandard (Node zlib when available; not implied by `*` alone by default)
+ * - br: Brotli (Node zlib; not implied by `*` alone by default)
  * - gzip: standard gzip (`*` counts as gzip)
  * - identity: no compression
  */
-export type ContentEncoding = 'openzl' | 'zstd' | 'gzip' | 'identity';
+export type ContentEncoding = 'openzl' | 'zstd' | 'br' | 'gzip' | 'identity';
 
 /**
  * Result metadata from a compress operation.
@@ -55,6 +56,18 @@ export interface PickEncodingOptions {
   preferZstd?: boolean;
 
   /**
+   * When brotli ties on q-value, prefer it over gzip (but below zstd).
+   * Default: true.
+   */
+  preferBrotli?: boolean;
+
+  /**
+   * Allow selecting brotli when the client lists `br`.
+   * Default: true when the runtime has brotli; callers may force false.
+   */
+  allowBrotli?: boolean;
+
+  /**
    * Allow selecting gzip (including via `*`). Default: true.
    */
   allowGzip?: boolean;
@@ -77,4 +90,10 @@ export interface PickEncodingOptions {
    * OpenZL is never selected via `*`.
    */
   starMeansZstd?: boolean;
+
+  /**
+   * If true, `Accept-Encoding: *` also counts as brotli support.
+   * Default: false, for the same reason as {@link starMeansZstd}.
+   */
+  starMeansBrotli?: boolean;
 }

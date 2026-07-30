@@ -1,6 +1,6 @@
 # openzl-express
 
-**HTTP compression middleware for Node.js** — negotiate **gzip**, **zstd**, and optional **[OpenZL](https://github.com/facebook/openzl)**.
+**HTTP compression middleware for Node.js** — negotiate **gzip**, **brotli**, **zstd**, and optional **[OpenZL](https://github.com/facebook/openzl)**.
 
 [![npm version](https://img.shields.io/npm/v/openzl-express.svg)](https://www.npmjs.com/package/openzl-express)
 [![Node.js](https://img.shields.io/node/v/openzl-express.svg)](https://nodejs.org)
@@ -19,21 +19,40 @@ Works with **Express**, **Fastify**, or **no framework** (`openzl-express/core`)
 | Codec | Role |
 |-------|------|
 | **gzip** | Always available. Safe default. Browser-friendly. |
-| **zstd** | Modern default when Node supports it (typically Node ≥ 22.15). |
+| **br** (brotli) | Every browser sends it. Smaller *and* faster than gzip at the default quality. |
+| **zstd** | Fastest of the general codecs when Node supports it (typically Node ≥ 22.15). |
 | **openzl** | **Opt-in only.** Best on *shaped* data (metrics JSON, fixed binary) after training. |
+
+Negotiation order when a client accepts several: **openzl → zstd → br → gzip**
+(equal q-values; a higher q always wins, and each codec can be switched off).
+
+Measured on a 188 KB JSON list response, Node 24 / M-series:
+
+| Codec | Output | Ratio | Encode |
+|-------|--------|-------|--------|
+| gzip | 37.6 KB | 19.9% | 1.86 ms |
+| **br** (quality 4, default) | **32.5 KB** | **17.2%** | **1.14 ms** |
+| zstd | 33.6 KB | 17.8% | 0.52 ms |
+| openzl (`serial`) | 35.7 KB | 18.9% | 0.39 ms |
+| br quality 11 | 23.6 KB | 12.5% | 181.8 ms ⚠️ |
+
+Brotli's zlib default is quality **11** — meant for build-time precompression of
+static files, 160× slower here. This package defaults to **quality 4**, which on
+this payload beat gzip on both size and speed. Tune with `brotliQuality`.
 
 **Design rules (same as production compression packages):**
 
-- `Accept-Encoding: *` → **gzip** (never openzl, never zstd by default)
+- `Accept-Encoding: *` → **gzip** (never openzl, zstd, or br by default)
 - Clients must send **`openzl` explicitly** to get OpenZL
-- Missing OpenZL CLI/native → **install still succeeds**; gzip/zstd keep working
+- Missing OpenZL CLI/native → **install still succeeds**; gzip/br/zstd keep working
 - `Vary: Accept-Encoding` is **appended** (existing `Vary: Origin` from cors survives)
 - `Cache-Control: no-transform` responses are never re-encoded (RFC 9110)
 - Bodies below `threshold` pass through untouched on every codec path
 - Streaming respects backpressure end to end — a slow client throttles the producer instead of filling server memory
 - A codec failure ends the response (500, or connection close mid-body) rather than leaving the client waiting
 
-This is **not** “always better than gzip.” Measure against gzip/zstd on *your* payloads.
+OpenZL is **not** “always better” — on the JSON above it lost to brotli and zstd.
+It earns its place on *shaped* data after training. Measure on *your* payloads.
 
 ---
 
@@ -59,13 +78,14 @@ npm install @amirja811/openzl-cli   # prebuilt `zli` when available for your pla
 | Requirement | Version |
 |-------------|---------|
 | Node | **≥ 18** |
+| gzip + brotli via `zlib` | built in on every supported Node — no extra deps |
 | zstd via `zlib` | typically **≥ 22.15** (auto-skipped if missing) |
 | OpenZL encode | native prebuild and/or `zli` CLI (optional) |
 
 > **Native prebuild availability:** the bundled native addon currently ships for
 > **macOS arm64 only**. On Linux and Windows, OpenZL encode requires the optional
 > `@amirja811/openzl-cli` package or building from source (`npm run build:native`).
-> gzip and zstd work everywhere regardless. Linux prebuilds are planned.
+> gzip, brotli, and zstd work everywhere regardless. Linux prebuilds are planned.
 
 ---
 
@@ -113,6 +133,7 @@ import {
   compress,
   decompress,
   compressGzip,
+  compressBrotli,
   compressZstd,
   pickEncoding,
   isZstdAvailable,
@@ -121,9 +142,10 @@ import {
 const buf = Buffer.from(JSON.stringify({ hello: 'world' }));
 
 // What would the server pick?
-pickEncoding('openzl, zstd, gzip'); // → 'openzl'
-pickEncoding('gzip, deflate, br');  // → 'gzip'
-pickEncoding('*');                  // → 'gzip'
+pickEncoding('openzl, zstd, gzip');    // → 'openzl'
+pickEncoding('gzip, deflate, br');     // → 'br'
+pickEncoding('gzip, deflate, br, zstd'); // → 'zstd'
+pickEncoding('*');                     // → 'gzip'
 
 const gz = await compressGzip(buf);
 const zl = await compress(buf, { profile: 'serial' }); // needs openzl backend
@@ -152,14 +174,24 @@ curl -sD- -H 'Accept-Encoding: gzip' http://127.0.0.1:3456/t -o /tmp/t.gz | grep
 # expect: content-encoding: gzip
 ```
 
-### 2) Zstd path (Node with zlib zstd)
+### 2) Brotli path (what a real browser gets)
+
+```bash
+curl -sD- -H 'Accept-Encoding: gzip, deflate, br, zstd' http://127.0.0.1:3456/t -o /tmp/t.br | grep -i content-encoding
+# expect: content-encoding: zstd   (br when the Node build has no zstd)
+
+curl -sD- -H 'Accept-Encoding: gzip, deflate, br' http://127.0.0.1:3456/t -o /tmp/t.br | grep -i content-encoding
+# expect: content-encoding: br
+```
+
+### 3) Zstd path (Node with zlib zstd)
 
 ```bash
 curl -sD- -H 'Accept-Encoding: zstd' http://127.0.0.1:3456/t -o /tmp/t.zst | grep -i content-encoding
 # expect: content-encoding: zstd   (or gzip if zstd unavailable)
 ```
 
-### 3) OpenZL path (needs CLI or native)
+### 4) OpenZL path (needs CLI or native)
 
 ```bash
 curl -sD- -H 'Accept-Encoding: openzl' http://127.0.0.1:3456/t -o /tmp/t.zl | grep -iE 'content-encoding|x-openzl'
@@ -167,7 +199,7 @@ curl -sD- -H 'Accept-Encoding: openzl' http://127.0.0.1:3456/t -o /tmp/t.zl | gr
 # optional: x-openzl-profile, x-openzl-ratio
 ```
 
-### 4) Decode OpenZL in Node
+### 5) Decode OpenZL in Node
 
 ```ts
 import { decompress } from 'openzl-express';
@@ -178,31 +210,34 @@ const plain = await decompress(frame);
 console.log(JSON.parse(plain.toString()));
 ```
 
-### 5) Compare sizes (your role models: gzip & zstd)
+### 6) Compare sizes (your role models: gzip, br & zstd)
 
 ```ts
 import {
   compress,
   compressGzip,
+  compressBrotli,
   compressZstd,
   isZstdAvailable,
 } from 'openzl-express';
 
 const plain = Buffer.from(JSON.stringify(payload));
 const gz = await compressGzip(plain);
+const br = await compressBrotli(plain);            // quality 4 by default
 const zs = isZstdAvailable() ? await compressZstd(plain) : null;
 const oz = await compress(plain, { profile: 'timeseries' });
 
 console.table({
   plain: plain.length,
   gzip: gz.length,
+  br: br.length,
   zstd: zs?.length ?? 'n/a',
   openzl: oz.length,
 });
 // Keep openzl only if it wins (or ties with a clear reason).
 ```
 
-### 6) Live demo in this repo
+### 7) Live demo in this repo
 
 ```bash
 git clone https://github.com/alvinja81/openzl-npm.git
@@ -218,11 +253,15 @@ cd openzl-npm && npm install && npm run demo:flagship
 |--------------------------------|--------------------|
 | `openzl` (explicit) | `Content-Encoding: openzl` |
 | `zstd` | `zstd` (if runtime supports it) |
+| `br` | `br` |
 | `gzip` or `*` | `gzip` |
-| `openzl, zstd, gzip` | prefers **openzl** → zstd → gzip |
+| `gzip, deflate, br` (typical browser) | `br` |
+| `gzip, deflate, br, zstd` (Chrome ≥ 123) | `zstd` |
+| `openzl, zstd, br, gzip` | prefers **openzl** → zstd → br → gzip |
+| `br;q=0.5, gzip` | `gzip` — a higher q always beats the default order |
 | none | uncompressed |
 
-Browsers almost never send `openzl`, so they get **gzip/zstd** only.
+Browsers almost never send `openzl`, so they get **br/zstd/gzip** only.
 
 ---
 
@@ -246,9 +285,12 @@ Browsers almost never send `openzl`, so they get **gzip/zstd** only.
 | `threshold` | `1024` | Minimum body size (bytes) to compress. Enforced on all paths: responses buffer until the threshold is crossed, then switch to streaming compression (below it, bodies pass through untouched). |
 | `profile` | `'serial'` | OpenZL profile name or path to `.zlc` |
 | `selectProfile` | — | `(req, …) => profile` per request |
-| `fallbackToGzip` | `true` | On OpenZL failure, try gzip/zstd |
-| `preferStreamGzip` | `true` | Prefer streaming gzip/zstd for `sendFile` |
+| `fallbackToGzip` | `true` | On OpenZL failure, re-negotiate to zstd/br/gzip. `false` sends the body uncompressed instead |
+| `preferStreamGzip` | `true` | Prefer streaming gzip/br/zstd for `sendFile` |
 | `allowZstd` | auto | Set `false` to disable zstd |
+| `allowBrotli` | auto | Set `false` to disable brotli |
+| `brotliQuality` | `4` | Brotli quality 0–11. Raise only for cacheable responses — 11 is ~160× slower |
+| `zstdLevel` | zlib default | Zstd compression level |
 | `onCompress` | — | Metrics: `{ encoding, ratio, ms, bytesIn, bytesOut }` |
 | `onError` | — | Error hook |
 | `filter` | compressible types | `(req, res) => boolean` |
@@ -275,7 +317,7 @@ app.use(openzlMiddleware({
 }));
 ```
 
-**Pass/fail rule:** if openzl is larger than zstd (or gzip when zstd is missing) on held-out samples, **don’t enable openzl** for that route.
+**Pass/fail rule:** if openzl is larger than zstd/br (or gzip when those are missing) on held-out samples, **don’t enable openzl** for that route.
 
 ---
 
@@ -342,7 +384,7 @@ openzlMiddleware({
 | Always gzip | Client didn’t send `openzl`; or no CLI/native installed |
 | No zstd | Node build without zlib zstd → package skips zstd automatically |
 | `npm install` ok but no openzl | Expected without CLI/native — heroes still work |
-| Browser can’t decode openzl | Don’t send `openzl` to browsers; use gzip/zstd |
+| Browser can’t decode openzl | Don’t send `openzl` to browsers; use br/zstd/gzip |
 
 ---
 

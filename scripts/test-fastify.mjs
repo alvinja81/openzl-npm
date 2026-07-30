@@ -9,7 +9,9 @@ import {
   openzlFastify,
   decompress,
   decompressZstd,
+  decompressBrotli,
   isZstdAvailable,
+  isBrotliAvailable,
   isNativeAvailable,
   getActiveBackend
 } from '../dist/index.js';
@@ -117,6 +119,12 @@ failed += await check('gzip', 'gzip', 'gzip', async (b) => zlib.gunzipSync(b));
 }
 if (isZstdAvailable()) {
   failed += await check('zstd', 'zstd', 'zstd', decompressZstd);
+}
+if (isBrotliAvailable()) {
+  failed += await check('br', 'br', 'br', decompressBrotli);
+  failed += await check('browser-like → br', 'gzip, deflate, br', 'br', decompressBrotli);
+} else {
+  console.log('⊘ brotli unavailable — skip brotli cases');
 }
 
 if (openzlOk) {

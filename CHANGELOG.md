@@ -7,6 +7,15 @@ This project follows [Semantic Versioning](https://semver.org/) for the `0.x` li
 
 ## [0.5.0] — 2026-07-30
 
+### Added
+- **Brotli (`br`) support** — the encoding every browser actually sends, via Node's built-in `zlib` (no new dependencies). Streaming and buffered paths, Express and Fastify, plus `compressBrotli` / `decompressBrotli` / `createBrotliStream` / `isBrotliAvailable` from the core entry.
+  - Default quality **4**, not zlib's default of 11: on a 188 KB JSON response, quality 4 produced **32.5 KB in 1.14 ms** versus gzip's 37.6 KB in 1.86 ms — smaller *and* faster. Quality 11 reached 23.6 KB but took **181.8 ms** (~160× slower), which is a build-time setting, not a per-request one. Tune with `brotliQuality`.
+  - New options: `allowBrotli`, `brotliQuality` (Express and Fastify); `preferBrotli`, `allowBrotli`, `starMeansBrotli` on `pickEncoding`.
+
+### Changed
+- **Negotiation order is now openzl → zstd → br → gzip** for equal q-values. A client sending a normal browser header (`gzip, deflate, br`) now receives **brotli instead of gzip**; `gzip, deflate, br, zstd` still receives zstd. Explicit q-values continue to win over this order (`br;q=0.5, gzip` → gzip), and `Accept-Encoding: *` still means gzip only. Set `allowBrotli: false` to keep the previous behavior.
+- **`fallbackToGzip` now gates every OpenZL fallback uniformly.** Previously a zstd fallback happened even with `fallbackToGzip: false`, which contradicted the option. With it disabled, a failed OpenZL encode now sends the body uncompressed.
+
 ### Fixed
 - **Backpressure now reaches the producer.** Codec output drains into the socket through a `Writable` sink, so each chunk's flush callback (rather than a shared `drain` event that could be lost) gates the next write. `res.write` returns the codec's backpressure signal and `drain` listeners are forwarded to the codec, so `pipe()`-ing a large response to a slow client no longer buffers it in memory — measured 1 MiB in flight for a 24 MiB response while the client refused to read.
 - **A codec error no longer hangs the client.** Failures now end the response: 500 when nothing has been sent yet, connection destroy once part of an encoded body is already on the wire (a silent truncation would hand the client a corrupt frame). Client aborts mid-response are treated as ordinary traffic, not logged as server errors.
@@ -15,8 +24,7 @@ This project follows [Semantic Versioning](https://semver.org/) for the `0.x` li
 - **`Cache-Control: no-transform` honored** (RFC 9110) in both Express and Fastify adapters — such responses are never re-encoded.
 - **`Vary` header appended instead of overwritten** — `Vary: Origin` set by cors or other middleware now survives (`Vary: Origin, Accept-Encoding`). Fastify plugin also sets `Vary` on all negotiable responses, not only compressed ones.
 
-### Added
-- Regression tests for the threshold, `no-transform`, and `Vary` fixes in the Express and Fastify smoke suites.
+- Regression tests for the threshold, `no-transform`, and `Vary` fixes in the Express and Fastify smoke suites, plus brotli coverage (negotiation, streaming, `sendFile`, threshold, `*`-is-not-`br`, 24 MiB integrity).
 - **`scripts/test-stream.mjs`** (`npm run test:stream`, wired into `npm test` and CI): backpressure under a paused client, large-body integrity for gzip and zstd, client abort survival, double-end and write-after-end safety. Fails on stall instead of hanging.
 
 ## [0.4.3] — 2026-07-30

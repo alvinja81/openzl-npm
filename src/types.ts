@@ -49,6 +49,18 @@ export interface OpenZLMiddlewareOptions {
   /** Zstd compression level (Node zlib params). Default: zlib default. */
   zstdLevel?: number;
 
+  /**
+   * Allow brotli when the client sends `br`.
+   * Default: true if `zlib.brotliCompress` exists (Node ≥ 18 always has it).
+   */
+  allowBrotli?: boolean;
+
+  /**
+   * Brotli quality 0–11. Default 4 — zlib's own default of 11 is meant for
+   * build-time precompression and is far too slow per request.
+   */
+  brotliQuality?: number;
+
   /** Custom error handler for compression failures */
   onError?: (error: Error, req: Request, res: Response) => void;
 

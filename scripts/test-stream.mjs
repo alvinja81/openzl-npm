@@ -12,7 +12,13 @@ import http from 'http';
 import crypto from 'crypto';
 import zlib from 'zlib';
 import { Readable } from 'stream';
-import { openzlMiddleware, decompressZstd, isZstdAvailable } from '../dist/index.js';
+import {
+  openzlMiddleware,
+  decompressZstd,
+  isZstdAvailable,
+  decompressBrotli,
+  isBrotliAvailable
+} from '../dist/index.js';
 
 const CHUNK = 64 * 1024;
 const CHUNKS = 384; // 24 MiB
@@ -148,6 +154,18 @@ const server = app.listen(0, async () => {
     ok('slow-read body length intact', plain.length === TOTAL, `${plain.length} != ${TOTAL}`);
     const got = crypto.createHash('sha256').update(plain).digest('hex');
     ok('slow-read body bytes intact', got === sourceHash);
+
+    // brotli rides the same sink; 24 MiB of random data at quality 4
+    if (isBrotliAvailable()) {
+      const b = await get(port, '/big', { 'Accept-Encoding': 'br' });
+      ok('brotli large body encoded', b.headers['content-encoding'] === 'br');
+      const bPlain = await decompressBrotli(b.body);
+      ok('brotli large body intact', bPlain.length === TOTAL, `${bPlain.length} != ${TOTAL}`);
+      const bHash = crypto.createHash('sha256').update(bPlain).digest('hex');
+      ok('brotli large body bytes intact', bHash === sourceHash);
+    } else {
+      console.log('⊘ brotli unavailable — skip brotli large-body case');
+    }
 
     // zstd rides the same sink, so check its large-body integrity too
     if (isZstdAvailable()) {

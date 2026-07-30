@@ -1,5 +1,6 @@
 import type { ContentEncoding, PickEncodingOptions } from './types.js';
 import { isZstdAvailable } from './zstd.js';
+import { isBrotliAvailable } from './brotli.js';
 
 /**
  * Parse an Accept-Encoding header into encoding name → q-value.
@@ -43,13 +44,16 @@ export const parseAcceptEncoding = (
  * - `openzl` only when listed explicitly (never via `*`) — browsers stay safe
  * - `gzip` from explicit `gzip` or `*`
  * - `zstd` from explicit `zstd` (and optionally `*` if starMeansZstd)
- * - Higher q wins; ties use preferOpenZL / preferZstd
+ * - `br` from explicit `br` (and optionally `*` if starMeansBrotli)
+ * - Higher q wins; ties fall back to openzl > zstd > br > gzip, subject to the
+ *   prefer* flags (a codec whose flag is off loses every tie to gzip)
  * - Returns `identity` when nothing usable is accepted
  *
  * @example
  * ```ts
  * pickEncoding('openzl, zstd, gzip;q=0.8') // 'openzl' (if allowOpenZL)
  * pickEncoding('zstd, gzip')               // 'zstd' when runtime has zstd
+ * pickEncoding('gzip, deflate, br')        // 'br'
  * pickEncoding('gzip')                     // 'gzip'
  * pickEncoding(undefined)                  // 'identity'
  * ```
@@ -61,64 +65,49 @@ export const pickEncoding = (
   const {
     preferOpenZL = true,
     preferZstd = true,
+    preferBrotli = true,
     allowGzip = true,
     allowOpenZL = true,
     allowZstd = isZstdAvailable(),
-    starMeansZstd = false
+    allowBrotli = isBrotliAvailable(),
+    starMeansZstd = false,
+    starMeansBrotli = false
   } = options;
 
   const accepted = parseAcceptEncoding(acceptEncoding);
   const star = accepted.get('*');
 
-  const openzlQ = allowOpenZL ? accepted.get('openzl') : undefined;
-
-  let zstdQ: number | undefined;
-  if (allowZstd) {
-    const explicit = accepted.get('zstd');
-    if (starMeansZstd && star !== undefined && explicit !== undefined) {
-      zstdQ = Math.max(explicit, star);
-    } else if (starMeansZstd && star !== undefined) {
-      zstdQ = star;
-    } else {
-      zstdQ = explicit;
-    }
-  }
-
-  let gzipQ: number | undefined;
-  if (allowGzip) {
-    const explicit = accepted.get('gzip');
+  /** q-value for one codec, folding in `*` only when that codec opts into it. */
+  const qFor = (name: string, starCounts: boolean): number | undefined => {
+    const explicit = accepted.get(name);
+    if (!starCounts) return explicit;
     if (explicit !== undefined && star !== undefined) {
-      gzipQ = Math.max(explicit, star);
-    } else {
-      gzipQ = explicit ?? star;
+      return Math.max(explicit, star);
     }
-  }
+    return explicit ?? star;
+  };
 
-  // Tie scores: higher wins when q equal. Prefer openzl > zstd > gzip when flags on.
+  const openzlQ = allowOpenZL ? accepted.get('openzl') : undefined;
+  const zstdQ = allowZstd ? qFor('zstd', starMeansZstd) : undefined;
+  const brQ = allowBrotli ? qFor('br', starMeansBrotli) : undefined;
+  const gzipQ = allowGzip ? qFor('gzip', true) : undefined;
+
+  // Tie scores: higher wins when q is equal. A codec whose prefer* flag is off
+  // drops below gzip, so gzip stays the conservative default.
   type Candidate = { encoding: ContentEncoding; q: number; tie: number };
   const candidates: Candidate[] = [];
 
   if (openzlQ !== undefined) {
-    candidates.push({
-      encoding: 'openzl',
-      q: openzlQ,
-      tie: preferOpenZL ? 3 : 0
-    });
+    candidates.push({ encoding: 'openzl', q: openzlQ, tie: preferOpenZL ? 4 : 0 });
   }
   if (zstdQ !== undefined) {
-    candidates.push({
-      encoding: 'zstd',
-      q: zstdQ,
-      // If preferOpenZL false, still prefer zstd over gzip when preferZstd
-      tie: preferZstd ? 2 : 1
-    });
+    candidates.push({ encoding: 'zstd', q: zstdQ, tie: preferZstd ? 3 : 0 });
+  }
+  if (brQ !== undefined) {
+    candidates.push({ encoding: 'br', q: brQ, tie: preferBrotli ? 2 : 0 });
   }
   if (gzipQ !== undefined) {
-    candidates.push({
-      encoding: 'gzip',
-      q: gzipQ,
-      tie: preferZstd || preferOpenZL ? 1 : 2
-    });
+    candidates.push({ encoding: 'gzip', q: gzipQ, tie: 1 });
   }
 
   if (candidates.length === 0) {

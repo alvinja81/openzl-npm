@@ -12,7 +12,9 @@ import {
   openzlMiddleware,
   decompress,
   decompressZstd,
+  decompressBrotli,
   isZstdAvailable,
+  isBrotliAvailable,
   isNativeAvailable,
   getActiveBackend,
   pickEncoding
@@ -172,6 +174,28 @@ const server = app.listen(0, async () => {
       if (!ok) failed++;
     }
 
+    // Phase 3: brotli
+    if (isBrotliAvailable()) {
+      await check('json+br', '/json', 'br', 'br', decompressBrotli);
+      await check('stream+br', '/stream', 'br', 'br', decompressBrotli);
+      await check('browser-like → br', '/json', 'gzip, deflate, br', 'br', decompressBrotli);
+      await check('sendFile+br', '/file', 'br', 'br', decompressBrotli);
+      // br must not be inferred from `*`, same rule as zstd/openzl
+      await check('star is not br', '/json', '*', 'gzip', (b) =>
+        Promise.resolve(zlib.gunzipSync(b))
+      );
+      // tiny bodies stay untouched on the brotli path too
+      {
+        const r = await request(port, '/tiny', 'br');
+        const ce = r.headers['content-encoding'];
+        const ok = !ce && r.body.toString() === '{"ok":true}';
+        console.log(ok ? '✓' : '✗', 'tiny below threshold (br)', ce || 'identity');
+        if (!ok) failed++;
+      }
+    } else {
+      console.log('⊘ brotli unavailable — skip brotli cases');
+    }
+
     // Phase 1: Cache-Control: no-transform is honored
     await check('no-transform identity', '/no-transform', 'gzip', null, async (b) => b);
 
@@ -239,11 +263,18 @@ const server = app.listen(0, async () => {
       } else {
         console.log('✓ pickEncoding * → gzip (not zstd)');
       }
-      if (pickEncoding('gzip, deflate, br') !== 'gzip') {
-        console.log('✗ pickEncoding browser-like', pickEncoding('gzip, deflate, br'));
+      // Browsers send br; it outranks gzip and loses to zstd.
+      if (pickEncoding('gzip, deflate, br') !== 'br') {
+        console.log('✗ pickEncoding browser-like → br', pickEncoding('gzip, deflate, br'));
         failed++;
       } else {
-        console.log('✓ pickEncoding browser-like → gzip');
+        console.log('✓ pickEncoding browser-like → br');
+      }
+      if (pickEncoding('gzip, deflate, br, zstd') !== 'zstd') {
+        console.log('✗ pickEncoding zstd over br', pickEncoding('gzip, deflate, br, zstd'));
+        failed++;
+      } else {
+        console.log('✓ pickEncoding zstd > br > gzip');
       }
     } else {
       console.log('⊘ zstd unavailable — skip zstd cases');
