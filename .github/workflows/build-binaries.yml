@@ -21,9 +21,9 @@ jobs:
         include:
           - os: macos-latest
             platform: darwin-arm64
-          - os: macos-15-intel
-            platform: darwin-x64
-            optional: true
+          # darwin-x64 omitted: the macos-15-intel runner is not allocated on
+          # this account within the job window, and a queued job keeps the
+          # whole run pending. See build-native.yml.
           - os: ubuntu-latest
             platform: linux-x64
           - os: ubuntu-24.04-arm

@@ -95,7 +95,7 @@ CLI or gzip/br/zstd if it cannot.
 |----------|---------------|
 | linux-x64 / linux-arm64 (glibc) | prebuild published |
 | darwin-arm64 | prebuild published |
-| darwin-x64 | best effort — Intel macOS runners are unreliable in CI |
+| darwin-x64 (Intel Mac) | not published — CI cannot allocate an Intel macOS runner; build locally |
 | linux musl (Alpine) | not published — build locally (`npm run build:native`) |
 | win32 | **not available**: OpenZL's C sources do not compile under MSVC yet |
 

@@ -12,6 +12,7 @@ This project follows [Semantic Versioning](https://semver.org/) for the `0.x` li
 - **`206 Partial Content` responses are no longer re-encoded.** A 206 body is a byte range of the *identity* representation and its `Content-Range` counts those bytes, so compressing it makes the range describe something the client never asked for. `204`, `205` and `304` are skipped for the same class of reason (no body to encode).
 
 ### Changed
+- **The `darwin-x64` prebuild leg is dropped.** Confirmed on the first push after the workflow fixes: `linux-x64`, `linux-arm64` and `darwin-arm64` all build in ~90 s, but the `macos-15-intel` runner is never allocated within the job window on this account. Marking it optional was not enough — a *queued* job keeps the whole run pending, so the run's result stayed unusable for hours. Intel Mac users build from source or use the `zli` CLI.
 - **`X-OpenZL-*` diagnostic headers are now opt-in** via `debugHeaders` (default `false`), in both adapters. They were sent on every compressed response, costing bytes and disclosing the uncompressed body size (`X-Original-Size`). Set `debugHeaders: true` while tuning profiles to get them back.
 - **`HEAD` now advertises the `Content-Encoding` that `GET` would return**, instead of silently omitting it. Only claimed when knowable — the app must have declared a `Content-Length` at or above `threshold`, since otherwise `GET` might have fallen through to identity — and that declared length (which describes the uncompressed body) is dropped so it cannot contradict the advertised encoding.
 
