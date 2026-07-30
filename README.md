@@ -10,7 +10,8 @@
 npm install openzl-express
 ```
 
-Works with **Express**, **Fastify**, or **no framework** (`openzl-express/core`).
+Works with **Express**, **Fastify**, or **no framework** (`openzl-express/core`),
+from both **ESM** (`import`) and **CommonJS** (`require`).
 
 ---
 
@@ -99,6 +100,30 @@ CLI or gzip/br/zstd if it cannot.
 Offline or firewalled installs get no addon (by design, never fatal). Force a
 specific binary with `OPENZL_NATIVE_URL`, skip the step with
 `OPENZL_SKIP_NATIVE=1`, or build from source with `npm run build:native`.
+
+---
+
+## Module formats
+
+Ships ESM and CommonJS builds from one package; every entry point works with
+either syntax, with matching TypeScript types under `moduleResolution: node16`.
+
+```js
+// ESM
+import { openzlMiddleware } from 'openzl-express/express';
+
+// CommonJS
+const { openzlMiddleware } = require('openzl-express/express');
+```
+
+The two builds are **not bundled**, so all entry points share a single
+`core` instance — one OpenZL CLI process pool and one native-addon cache, not
+one per entry point.
+
+> Standard dual-package caveat: loading *both* the ESM and CJS copies in the
+> same process (say, `import` in your code and `require` from a dependency)
+> gives you two independent module states, and therefore two CLI pools. Pick one
+> syntax per process if you use the OpenZL backend.
 
 ---
 

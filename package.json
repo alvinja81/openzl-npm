@@ -3,27 +3,51 @@
   "version": "0.5.0",
   "description": "HTTP compression for Node: gzip · brotli · zstd · optional OpenZL. Express + Fastify + core.",
   "type": "module",
-  "main": "dist/index.js",
+  "main": "dist/cjs/index.js",
   "types": "dist/index.d.ts",
   "bin": {
     "openzl-train": "./scripts/openzl-train.mjs"
   },
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/cjs/index.d.ts",
+        "default": "./dist/cjs/index.js"
+      }
     },
     "./core": {
-      "types": "./dist/core-entry.d.ts",
-      "import": "./dist/core-entry.js"
+      "import": {
+        "types": "./dist/core-entry.d.ts",
+        "default": "./dist/core-entry.js"
+      },
+      "require": {
+        "types": "./dist/cjs/core-entry.d.ts",
+        "default": "./dist/cjs/core-entry.js"
+      }
     },
     "./express": {
-      "types": "./dist/express.d.ts",
-      "import": "./dist/express.js"
+      "import": {
+        "types": "./dist/express.d.ts",
+        "default": "./dist/express.js"
+      },
+      "require": {
+        "types": "./dist/cjs/express.d.ts",
+        "default": "./dist/cjs/express.js"
+      }
     },
     "./fastify": {
-      "types": "./dist/fastify.d.ts",
-      "import": "./dist/fastify.js"
+      "import": {
+        "types": "./dist/fastify.d.ts",
+        "default": "./dist/fastify.js"
+      },
+      "require": {
+        "types": "./dist/cjs/fastify.d.ts",
+        "default": "./dist/cjs/fastify.js"
+      }
     },
     "./browser": "./browser/index.js",
     "./browser/*": "./browser/*"
@@ -60,7 +84,7 @@
     "docs/charts"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc --noEmit && tsup && node scripts/finalize-dual-build.mjs",
     "build:openzl": "bash scripts/build-openzl.sh",
     "build:native": "bash scripts/build-native.sh",
     "build:wasm": "bash scripts/build-wasm.sh",
@@ -70,7 +94,7 @@
     "demo:flagship": "npm run build && node examples/flagship-metrics/server.mjs",
     "postinstall": "node scripts/install-native.mjs",
     "dev": "nodemon --exec ts-node src/index.ts",
-    "test": "npm run build && node scripts/test-middleware.mjs && node scripts/test-fastify.mjs && node scripts/test-stream.mjs && node scripts/test-prebuild.mjs && node scripts/test-trust.mjs",
+    "test": "npm run build && node scripts/test-middleware.mjs && node scripts/test-fastify.mjs && node scripts/test-stream.mjs && node scripts/test-prebuild.mjs && node scripts/test-dual.mjs && node scripts/test-trust.mjs",
     "test:stream": "npm run build && node scripts/test-stream.mjs",
     "test:trust": "npm run build && node scripts/test-trust.mjs",
     "test:server": "ts-node example/server.ts",
@@ -79,7 +103,9 @@
     "bench": "npm run build && node --experimental-strip-types bench/run.ts",
     "bench:quick": "npm run build && node --experimental-strip-types bench/run.ts --quick",
     "bench:full": "npm run build && node --experimental-strip-types bench/run.ts --full",
-    "prepublishOnly": "npm run build && node scripts/release-check.mjs"
+    "prepublishOnly": "npm run build && node scripts/release-check.mjs",
+    "typecheck": "tsc --noEmit",
+    "test:dual": "npm run build && node scripts/test-dual.mjs"
   },
   "keywords": [
     "openzl",
@@ -121,6 +147,7 @@
     "node-addon-api": "^8.9.0",
     "nodemon": "^3.0.3",
     "ts-node": "^10.9.2",
+    "tsup": "^8.5.1",
     "typescript": "^5.3.3"
   },
   "engines": {
@@ -136,5 +163,6 @@
   "homepage": "https://github.com/alvinja81/openzl-npm#readme",
   "dependencies": {
     "fastify-plugin": "^6.0.0"
-  }
+  },
+  "module": "dist/index.js"
 }

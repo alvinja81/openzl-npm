@@ -42,10 +42,48 @@ if (!changelog.includes(`[${pkg.version}]`) && !changelog.includes(`## [${pkg.ve
   fail(`CHANGELOG.md missing section for ${pkg.version}`);
 } else ok('CHANGELOG mentions this version');
 
-// exports map
+// exports map — every condition must point at a file that actually exists, or
+// consumers get ERR_MODULE_NOT_FOUND (or silent `any` types) after publish.
 for (const exp of ['.', './core', './express', './fastify']) {
-  if (!pkg.exports?.[exp]) fail(`exports missing ${exp}`);
-  else ok(`exports ${exp}`);
+  const entry = pkg.exports?.[exp];
+  if (!entry) {
+    fail(`exports missing ${exp}`);
+    continue;
+  }
+  let broken = 0;
+  for (const cond of ['import', 'require']) {
+    const target = entry[cond];
+    if (!target) {
+      fail(`exports ${exp} missing "${cond}" condition (dual build)`);
+      broken++;
+      continue;
+    }
+    if (Object.keys(target)[0] !== 'types') {
+      fail(`exports ${exp}.${cond} must list "types" first`);
+      broken++;
+    }
+    for (const key of ['types', 'default']) {
+      const rel = target[key];
+      if (!rel) {
+        fail(`exports ${exp}.${cond} missing ${key}`);
+        broken++;
+      } else if (!fs.existsSync(path.join(root, rel))) {
+        fail(`exports ${exp}.${cond}.${key} → missing file ${rel}`);
+        broken++;
+      }
+    }
+  }
+  if (!broken) ok(`exports ${exp} (import + require, types present)`);
+}
+
+// dist/cjs must be marked CommonJS or Node reads those files as ESM
+const cjsMarker = path.join(root, 'dist/cjs/package.json');
+if (!fs.existsSync(cjsMarker)) {
+  fail('dist/cjs/package.json missing (CJS half would be parsed as ESM)');
+} else if (JSON.parse(fs.readFileSync(cjsMarker, 'utf8')).type !== 'commonjs') {
+  fail('dist/cjs/package.json must set "type": "commonjs"');
+} else {
+  ok('dist/cjs marked commonjs');
 }
 
 // files field must include install script + dist

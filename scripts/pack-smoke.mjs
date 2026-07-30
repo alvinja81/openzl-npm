@@ -74,7 +74,37 @@ console.log(JSON.stringify({
   fs.writeFileSync(path.join(tmp, 'probe.mjs'), probe);
   const out = run('node probe.mjs', tmp);
   console.log(out.trim());
-  console.log('\npack-smoke ok');
+
+  // CommonJS consumers must get a working build from the same tarball.
+  const cjsProbe = `
+const {
+  pickEncoding,
+  compressGzip,
+  compressBrotli,
+  openzlMiddleware
+} = require('openzl-express');
+const { openzlMiddleware: fromExpress } = require('openzl-express/express');
+const core = require('openzl-express/core');
+
+if (pickEncoding('gzip, deflate, br') !== 'br') throw new Error('cjs negotiate');
+if (typeof openzlMiddleware !== 'function') throw new Error('cjs middleware');
+if (typeof fromExpress !== 'function') throw new Error('cjs express subpath');
+if (typeof core.compress !== 'function') throw new Error('cjs core.compress');
+
+// One shared module instance across entry points: a bundled build would give
+// each entry its own CLI pool and native cache.
+if (core.pickEncoding !== pickEncoding) throw new Error('cjs entries not sharing modules');
+
+compressGzip(Buffer.from('x'.repeat(200)))
+  .then((gz) => compressBrotli(Buffer.from('x'.repeat(200))).then((br) => {
+    console.log(JSON.stringify({ cjs: true, gzipBytes: gz.length, brotliBytes: br.length }));
+  }))
+  .catch((e) => { console.error(e); process.exit(1); });
+`;
+  fs.writeFileSync(path.join(tmp, 'probe.cjs'), cjsProbe);
+  console.log(run('node probe.cjs', tmp).trim());
+
+  console.log('\npack-smoke ok (esm + cjs)');
 } catch (e) {
   console.error('pack-smoke failed:', e.stdout || e.stderr || e.message);
   if (e.stdout) console.error(e.stdout);
