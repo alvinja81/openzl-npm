@@ -58,6 +58,11 @@ npm install @amirja811/openzl-cli   # prebuilt `zli` when available for your pla
 | zstd via `zlib` | typically **≥ 22.15** (auto-skipped if missing) |
 | OpenZL encode | native prebuild and/or `zli` CLI (optional) |
 
+> **Native prebuild availability:** the bundled native addon currently ships for
+> **macOS arm64 only**. On Linux and Windows, OpenZL encode requires the optional
+> `@amirja811/openzl-cli` package or building from source (`npm run build:native`).
+> gzip and zstd work everywhere regardless. Linux prebuilds are planned.
+
 ---
 
 ## 30-second start
@@ -72,7 +77,7 @@ const app = express();
 
 app.use(
   openzlMiddleware({
-    threshold: 1024,          // skip tiny bodies
+    threshold: 1024,          // min bytes to compress (see options table for 0.4.x caveat)
     profile: 'timeseries',    // or 'serial' | 'api-list' | path to .zlc
     fallbackToGzip: true,
   })
@@ -234,7 +239,7 @@ Browsers almost never send `openzl`, so they get **gzip/zstd** only.
 | Option | Default | Description |
 |--------|---------|-------------|
 | `enabled` | `true` | Master switch |
-| `threshold` | `1024` | Minimum body size (bytes) to compress |
+| `threshold` | `1024` | Minimum body size (bytes) to compress. **Known limitation (0.4.x):** only enforced on the buffered (openzl) path; gzip/zstd streaming responses are compressed regardless of size. Fix planned for 0.5. |
 | `profile` | `'serial'` | OpenZL profile name or path to `.zlc` |
 | `selectProfile` | — | `(req, …) => profile` per request |
 | `fallbackToGzip` | `true` | On OpenZL failure, try gzip/zstd |

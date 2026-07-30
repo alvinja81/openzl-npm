@@ -5,6 +5,16 @@ All notable changes to this project are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project follows [Semantic Versioning](https://semver.org/) for the `0.x` line (breaking changes allowed with minor bumps until 1.0).
 
+## [0.4.3] — 2026-07-30
+
+### Added
+- **LICENSE file** (MIT). The package previously declared MIT in `package.json` but shipped no license text.
+
+### Changed
+- **README honesty pass:**
+  - Documented that the bundled native prebuild is **macOS arm64 only**; Linux/Windows need `@amirja811/openzl-cli` or a source build (gzip/zstd unaffected).
+  - Documented known 0.4.x limitation: `threshold` is only enforced on the buffered (openzl) path — gzip/zstd streaming responses compress regardless of size. Fix planned for 0.5.
+
 ## [0.4.2] — 2026-07-29
 
 ### Changed
