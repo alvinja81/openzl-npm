@@ -28,6 +28,12 @@ export type SharedCodecOptions = {
   allowBrotli?: boolean;
   /** Brotli quality 0–11. Default 4 (dynamic-response friendly). */
   brotliQuality?: number;
+  /**
+   * Emit `X-OpenZL-*` / `X-Compression-*` diagnostic headers.
+   * Default false — they add bytes to every compressed response and disclose
+   * the uncompressed body size.
+   */
+  debugHeaders?: boolean;
   debug?: boolean;
   /** Observability: called after a successful (or fallback) compress. */
   onCompress?: OnCompressHook;

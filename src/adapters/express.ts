@@ -50,7 +50,8 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
     allowZstd = isZstdAvailable(),
     zstdLevel,
     allowBrotli = isBrotliAvailable(),
-    brotliQuality
+    brotliQuality,
+    debugHeaders = false
   } = options;
 
   const reportCompress = (
@@ -112,6 +113,14 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
     const originalEnd = res.end.bind(res);
     const rawOn = res.on.bind(res);
     const rawOnce = res.once.bind(res);
+
+    /**
+     * `X-OpenZL-*` diagnostics are opt-in (`debugHeaders`): they add bytes to
+     * every compressed response and disclose the uncompressed body size.
+     */
+    const setDebugHeader = (name: string, value: string): void => {
+      if (debugHeaders) res.setHeader(name, value);
+    };
 
     type Mode = 'pending' | 'identity' | 'collect' | 'stream' | 'buffer';
     let mode: Mode = 'pending';
@@ -194,9 +203,22 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
       return ce != null && String(ce).length > 0 && String(ce) !== 'identity';
     };
 
+    /**
+     * A 206 body is a byte range of the *identity* representation, and its
+     * `Content-Range` counts those bytes — re-encoding would make the range
+     * describe something the client never asked for. 204/205/304 carry no body.
+     */
+    const isPartialOrBodiless = (): boolean =>
+      res.statusCode === 206 ||
+      res.getHeader('content-range') != null ||
+      res.statusCode === 204 ||
+      res.statusCode === 205 ||
+      res.statusCode === 304;
+
     const canCompressNow = (): boolean =>
       !alreadyEncoded() &&
       !hasNoTransform(res.getHeader('cache-control')) &&
+      !isPartialOrBodiless() &&
       typeFilter(req, res);
 
     const startStream = (which: 'gzip' | 'zstd' | 'br'): void => {
@@ -288,6 +310,27 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
       return mode;
     };
 
+    /**
+     * A HEAD response carries no body, so nothing here ever compresses one —
+     * but its headers are supposed to match what GET would return, and clients
+     * do probe with HEAD to learn the encoding.
+     *
+     * Only claim an encoding when it is knowable: the app must have declared a
+     * `Content-Length` at or above the threshold, since otherwise GET might
+     * have fallen through to identity. The declared length describes the
+     * uncompressed body, so it is dropped rather than left to contradict the
+     * `Content-Encoding` we just advertised.
+     */
+    const applyHeadEncodingHeaders = (): void => {
+      if (req.method !== 'HEAD' || res.headersSent) return;
+      if (encoding === 'identity' || !canCompressNow()) return;
+      const declared = Number(res.getHeader('content-length'));
+      if (!Number.isFinite(declared) || declared < threshold) return;
+      res.setHeader('Content-Encoding', encoding);
+      res.removeHeader('Content-Length');
+      log(`HEAD: advertising ${encoding} to match GET`);
+    };
+
     const collectToStream = (): void => {
       mode = 'stream';
       startStream(encoding === 'zstd' ? 'zstd' : encoding === 'br' ? 'br' : 'gzip');
@@ -314,8 +357,8 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
         res.removeHeader('Content-Length');
         res.setHeader('Content-Encoding', enc);
         res.setHeader('Content-Length', String(out.length));
-        res.setHeader('X-Compression-Fallback', enc);
-        res.setHeader('X-OpenZL-Error', err.name);
+        setDebugHeader('X-Compression-Fallback', enc);
+        setDebugHeader('X-OpenZL-Error', err.name);
         reportCompress(enc, body.length, out.length, performance.now() - started, {
           fallbackFrom: err.name
         });
@@ -374,13 +417,13 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
           res.removeHeader('Content-Length');
           res.setHeader('Content-Encoding', 'openzl');
           res.setHeader('Content-Length', String(out.length));
-          res.setHeader('X-OpenZL-Profile', chosen);
-          res.setHeader(
+          setDebugHeader('X-OpenZL-Profile', chosen);
+          setDebugHeader(
             'X-OpenZL-Ratio',
             `${((out.length / body.length) * 100).toFixed(2)}%`
           );
-          res.setHeader('X-Original-Size', String(body.length));
-          res.setHeader('X-Compressed-Size', String(out.length));
+          setDebugHeader('X-Original-Size', String(body.length));
+          setDebugHeader('X-Compressed-Size', String(out.length));
           reportCompress('openzl', body.length, out.length, performance.now() - started, {
             profile: chosen
           });
@@ -511,6 +554,7 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
 
       if (mode === 'pending') {
         if (length === 0 && chunks.length === 0) {
+          applyHeadEncodingHeaders();
           mode = 'identity';
           ended = true;
           originalEnd();
@@ -568,7 +612,10 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
           typeof optionsOrFn === 'object' && optionsOrFn !== null ? optionsOrFn : {};
         const cb = typeof optionsOrFn === 'function' ? optionsOrFn : fn;
 
-        if (encoding === 'openzl') {
+        // A range request must keep Express's 206 handling: the openzl path
+        // below reads the whole file and would answer a partial request with
+        // the entire, re-encoded representation.
+        if (encoding === 'openzl' && !req.headers.range) {
           const streamAlt = pick(accept, { allowOpenZL: false });
           if (
             preferStreamGzip &&

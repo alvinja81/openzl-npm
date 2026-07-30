@@ -5,6 +5,16 @@ All notable changes to this project are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project follows [Semantic Versioning](https://semver.org/) for the `0.x` line (breaking changes allowed with minor bumps until 1.0).
 
+## [Unreleased]
+
+### Fixed
+- **A range request could be answered with the whole file.** When OpenZL was the only encoding a client accepted, the `sendFile` override read the entire file and compressed it, ignoring `Range` entirely: `Range: bytes=0-99` returned **HTTP 200 with the complete file, openzl-encoded**, instead of a 206 slice. Range requests now stay on Express's own path. Covered by a regression test that was confirmed to fail against the previous code.
+- **`206 Partial Content` responses are no longer re-encoded.** A 206 body is a byte range of the *identity* representation and its `Content-Range` counts those bytes, so compressing it makes the range describe something the client never asked for. `204`, `205` and `304` are skipped for the same class of reason (no body to encode).
+
+### Changed
+- **`X-OpenZL-*` diagnostic headers are now opt-in** via `debugHeaders` (default `false`), in both adapters. They were sent on every compressed response, costing bytes and disclosing the uncompressed body size (`X-Original-Size`). Set `debugHeaders: true` while tuning profiles to get them back.
+- **`HEAD` now advertises the `Content-Encoding` that `GET` would return**, instead of silently omitting it. Only claimed when knowable — the app must have declared a `Content-Length` at or above `threshold`, since otherwise `GET` might have fallen through to identity — and that declared length (which describes the uncompressed body) is dropped so it cannot contradict the advertised encoding.
+
 ## [0.5.0] — 2026-07-30
 
 ### Added

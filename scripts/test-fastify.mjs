@@ -56,6 +56,7 @@ function request(acceptEncoding, path = '/json') {
             resolve({
               ce: res.headers['content-encoding'],
               vary: res.headers['vary'],
+              headers: res.headers,
               body: Buffer.concat(chunks)
             })
           );
@@ -108,6 +109,16 @@ failed += await check('gzip', 'gzip', 'gzip', async (b) => zlib.gunzipSync(b));
   const nt = await request('gzip', '/no-transform');
   const ok = !nt.ce && nt.body.toString().includes('item-0');
   console.log(ok ? '✓' : '✗', 'fastify no-transform identity', nt.ce || 'identity');
+  if (!ok) failed++;
+}
+{
+  const r = await request('openzl', '/json');
+  const leaked = Object.keys(r.headers).filter(
+    (h) => h.startsWith('x-openzl') || h.startsWith('x-original') ||
+           h.startsWith('x-compressed') || h.startsWith('x-compression')
+  );
+  const ok = leaked.length === 0;
+  console.log(ok ? '✓' : '✗', 'fastify debug headers off by default', leaked.join(',') || 'none');
   if (!ok) failed++;
 }
 {

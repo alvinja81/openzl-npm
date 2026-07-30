@@ -77,6 +77,7 @@ const plugin: FastifyPluginAsync<OpenZLFastifyOptions> = async (
     zstdLevel,
     allowBrotli = isBrotliAvailable(),
     brotliQuality,
+    debugHeaders = false,
     debug = false,
     filter,
     selectProfile,
@@ -146,18 +147,22 @@ const plugin: FastifyPluginAsync<OpenZLFastifyOptions> = async (
 
       reply.header('content-encoding', result.encoding);
       reply.header('content-length', String(result.body.length));
-      if (result.encoding === 'openzl' && result.profile) {
-        reply.header('x-openzl-profile', result.profile);
-        reply.header(
-          'x-openzl-ratio',
-          `${((result.body.length / body.length) * 100).toFixed(2)}%`
-        );
-        reply.header('x-original-size', String(body.length));
-        reply.header('x-compressed-size', String(result.body.length));
-      }
-      if (result.fallbackFrom) {
-        reply.header('x-compression-fallback', result.encoding);
-        reply.header('x-openzl-error', result.fallbackFrom);
+      // Diagnostics are opt-in: they cost bytes on every compressed response
+      // and disclose the uncompressed size.
+      if (debugHeaders) {
+        if (result.encoding === 'openzl' && result.profile) {
+          reply.header('x-openzl-profile', result.profile);
+          reply.header(
+            'x-openzl-ratio',
+            `${((result.body.length / body.length) * 100).toFixed(2)}%`
+          );
+          reply.header('x-original-size', String(body.length));
+          reply.header('x-compressed-size', String(result.body.length));
+        }
+        if (result.fallbackFrom) {
+          reply.header('x-compression-fallback', result.encoding);
+          reply.header('x-openzl-error', result.fallbackFrom);
+        }
       }
 
       log(`${result.encoding}: ${body.length} → ${result.body.length}`);

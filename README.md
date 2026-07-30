@@ -48,6 +48,8 @@ this payload beat gzip on both size and speed. Tune with `brotliQuality`.
 - Missing OpenZL CLI/native → **install still succeeds**; gzip/br/zstd keep working
 - `Vary: Accept-Encoding` is **appended** (existing `Vary: Origin` from cors survives)
 - `Cache-Control: no-transform` responses are never re-encoded (RFC 9110)
+- `206 Partial Content` is never re-encoded — the range describes the identity bytes — and neither are 204/205/304
+- `HEAD` advertises the same `Content-Encoding` a `GET` would return, when the declared length makes that knowable
 - Bodies below `threshold` pass through untouched on every codec path
 - Streaming respects backpressure end to end — a slow client throttles the producer instead of filling server memory
 - A codec failure ends the response (500, or connection close mid-body) rather than leaving the client waiting
@@ -232,10 +234,12 @@ curl -sD- -H 'Accept-Encoding: zstd' http://127.0.0.1:3456/t -o /tmp/t.zst | gre
 ### 4) OpenZL path (needs CLI or native)
 
 ```bash
-curl -sD- -H 'Accept-Encoding: openzl' http://127.0.0.1:3456/t -o /tmp/t.zl | grep -iE 'content-encoding|x-openzl'
+curl -sD- -H 'Accept-Encoding: openzl' http://127.0.0.1:3456/t -o /tmp/t.zl | grep -i content-encoding
 # expect: content-encoding: openzl
-# optional: x-openzl-profile, x-openzl-ratio
 ```
+
+`X-OpenZL-Profile` / `X-OpenZL-Ratio` are off by default; start the server with
+`openzlMiddleware({ debugHeaders: true })` to see them while tuning profiles.
 
 ### 5) Decode OpenZL in Node
 
@@ -330,6 +334,7 @@ Browsers almost never send `openzl`, so they get **br/zstd/gzip** only.
 | `brotliQuality` | `4` | Brotli quality 0–11. Raise only for cacheable responses — 11 is ~160× slower |
 | `zstdLevel` | zlib default | Zstd compression level |
 | `onCompress` | — | Metrics: `{ encoding, ratio, ms, bytesIn, bytesOut }` |
+| `debugHeaders` | `false` | Emit `X-OpenZL-Profile`, `X-OpenZL-Ratio`, `X-Original-Size`, … Off by default: they cost bytes on every compressed response and disclose the uncompressed size |
 | `onError` | — | Error hook |
 | `filter` | compressible types | `(req, res) => boolean` |
 | `debug` | `false` | Verbose logs |

@@ -70,6 +70,15 @@ export interface OpenZLMiddlewareOptions {
    */
   onCompress?: import('./core/types.js').OnCompressHook;
 
+  /**
+   * Emit `X-OpenZL-Profile`, `X-OpenZL-Ratio`, `X-Original-Size`,
+   * `X-Compressed-Size`, `X-Compression-Fallback` and `X-OpenZL-Error`.
+   *
+   * Default false: they add bytes to every compressed response and disclose the
+   * uncompressed body size. Turn on while tuning profiles.
+   */
+  debugHeaders?: boolean;
+
   /** Enable debug logging (default: false) */
   debug?: boolean;
 }

@@ -84,17 +84,31 @@ app.get('/no-transform', (_req, res) => {
   res.type('json').send(bigJson);
 });
 
+app.get('/partial', (_req, res) => {
+  // Simulates a 206 range response: body is a slice of the identity bytes
+  const slice = bigJson.slice(0, 4096);
+  res.status(206);
+  res.set('Content-Range', `bytes 0-4095/${Buffer.byteLength(bigJson)}`);
+  res.type('json').send(slice);
+});
+
+app.get('/not-modified', (_req, res) => {
+  res.status(304).end();
+});
+
 fs.writeFileSync(tmpFile, bigJson);
 
-function request(port, urlPath, acceptEncoding) {
+function request(port, urlPath, acceptEncoding, extra = {}) {
+  const { method = 'GET', headers = {} } = extra;
   return new Promise((resolve, reject) => {
     http
-      .get(
+      .request(
         {
+          method,
           host: '127.0.0.1',
           port,
           path: urlPath,
-          headers: { 'Accept-Encoding': acceptEncoding }
+          headers: { 'Accept-Encoding': acceptEncoding, ...headers }
         },
         (res) => {
           const chunks = [];
@@ -108,7 +122,8 @@ function request(port, urlPath, acceptEncoding) {
           });
         }
       )
-      .on('error', reject);
+      .on('error', reject)
+      .end();
   });
 }
 
@@ -194,6 +209,97 @@ const server = app.listen(0, async () => {
       }
     } else {
       console.log('⊘ brotli unavailable — skip brotli cases');
+    }
+
+    // Phase 6: diagnostic headers are opt-in
+    if (openzlOk) {
+      const r = await request(port, '/json', 'openzl');
+      const leaked = Object.keys(r.headers).filter(
+        (h) => h.startsWith('x-openzl') || h.startsWith('x-original') ||
+               h.startsWith('x-compressed') || h.startsWith('x-compression')
+      );
+      const ok = r.headers['content-encoding'] === 'openzl' && leaked.length === 0;
+      console.log(ok ? '✓' : '✗', 'debug headers off by default', leaked.join(',') || 'none');
+      if (!ok) failed++;
+    }
+
+    // Phase 6: 206/304 must never be re-encoded
+    {
+      const r = await request(port, '/partial', 'gzip, br');
+      const ok = r.status === 206 && !r.headers['content-encoding'];
+      console.log(ok ? '✓' : '✗', 'partial 206 not compressed', r.headers['content-encoding'] || 'identity');
+      if (!ok) failed++;
+    }
+    {
+      const r = await request(port, '/not-modified', 'gzip, br');
+      const ok = r.status === 304 && !r.headers['content-encoding'];
+      console.log(ok ? '✓' : '✗', '304 not compressed', r.headers['content-encoding'] || 'identity');
+      if (!ok) failed++;
+    }
+
+    // Phase 6: HEAD advertises the encoding GET would use
+    {
+      const head = await request(port, '/json', 'gzip', { method: 'HEAD' });
+      const get = await request(port, '/json', 'gzip');
+      const ok = head.headers['content-encoding'] === get.headers['content-encoding'];
+      console.log(
+        ok ? '✓' : '✗',
+        'HEAD matches GET encoding',
+        `head=${head.headers['content-encoding'] || 'none'} get=${get.headers['content-encoding'] || 'none'}`
+      );
+      if (!ok) failed++;
+      const small = await request(port, '/tiny', 'gzip', { method: 'HEAD' });
+      const ok2 = !small.headers['content-encoding'];
+      console.log(ok2 ? '✓' : '✗', 'HEAD below threshold claims nothing', small.headers['content-encoding'] || 'none');
+      if (!ok2) failed++;
+    }
+
+    // Phase 6: a range request keeps Express's 206 handling instead of being
+    // answered with the whole re-encoded file
+    {
+      // openzl alone: with any alternative codec present preferStreamGzip
+      // diverts before the whole-file buffering branch, so this is the only
+      // header that reaches it.
+      const r = await request(port, '/file', 'openzl', {
+        headers: { Range: 'bytes=0-99' }
+      });
+      const ok =
+        r.status === 206 &&
+        !!r.headers['content-range'] &&
+        !r.headers['content-encoding'] &&
+        r.body.length === 100 &&
+        r.body.toString() === bigJson.slice(0, 100);
+      console.log(
+        ok ? '✓' : '✗',
+        'sendFile honors Range',
+        `status=${r.status} range=${r.headers['content-range'] || 'none'} enc=${r.headers['content-encoding'] || 'identity'} len=${r.body.length}`
+      );
+      if (!ok) failed++;
+    }
+
+    // Phase 6: opt-in diagnostics really do appear when asked for
+    if (openzlOk) {
+      const dbgApp = express();
+      dbgApp.use(openzlMiddleware({ threshold: 100, debugHeaders: true }));
+      dbgApp.get('/json', (_q, s) => s.json(big));
+      const dbgServer = dbgApp.listen(0);
+      await new Promise((r) => dbgServer.once('listening', r));
+      try {
+        const r = await request(dbgServer.address().port, '/json', 'openzl');
+        const ok =
+          r.headers['content-encoding'] === 'openzl' &&
+          !!r.headers['x-openzl-profile'] &&
+          !!r.headers['x-openzl-ratio'] &&
+          !!r.headers['x-original-size'];
+        console.log(
+          ok ? '✓' : '✗',
+          'debugHeaders:true emits diagnostics',
+          `${r.headers['x-openzl-profile'] || '-'} ${r.headers['x-openzl-ratio'] || '-'}`
+        );
+        if (!ok) failed++;
+      } finally {
+        dbgServer.close();
+      }
     }
 
     // Phase 1: Cache-Control: no-transform is honored
