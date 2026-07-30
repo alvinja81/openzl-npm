@@ -31,15 +31,24 @@ jobs:
             platform: darwin-arm64
           - os: macos-15-intel
             platform: darwin-x64
+            # Intel macOS runners have been slow/flaky to allocate here.
+            optional: true
           - os: ubuntu-latest
             platform: linux-x64
           - os: ubuntu-24.04-arm
             platform: linux-arm64
-          # Windows native is best-effort (OpenZL + cmake-js + MSVC)
+          # OpenZL's C sources do not compile under MSVC today (C2099
+          # "initializer is not a constant" in encoder_registry.c), so this leg
+          # is expected to fail until upstream supports it. gzip/br/zstd are
+          # unaffected on Windows; only the optional OpenZL addon is missing.
           - os: windows-latest
             platform: win32-x64
+            optional: true
 
     runs-on: ${{ matrix.os }}
+    # Without this a stalled runner burned 5+ hours per job.
+    timeout-minutes: 40
+    continue-on-error: ${{ matrix.optional == true }}
 
     steps:
       - name: Checkout
@@ -135,9 +144,14 @@ jobs:
           retention-days: 30
 
   attach-release:
-    if: github.event_name == 'release'
+    # `always()` is essential: a single failing platform (Windows, or a flaky
+    # Intel macOS runner) must not withhold the prebuilds that did build.
+    # Without it this job was skipped on every release and no platform ever
+    # received a prebuild.
+    if: always() && github.event_name == 'release'
     needs: build-native
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: write
     steps:
@@ -152,6 +166,7 @@ jobs:
           mkdir -p release-assets
           version="${{ github.event.release.tag_name }}"
           version="${version#v}"
+          shopt -s nullglob
           for dir in artifacts/native-*/; do
             platform=$(basename "$dir")
             platform=${platform#native-}
@@ -159,6 +174,12 @@ jobs:
             tar -czf "release-assets/$name" -C "$dir" .
             echo "packed $name"
           done
+          count=$(ls -1 release-assets | wc -l)
+          if [ "$count" -eq 0 ]; then
+            echo "No prebuilds were produced by any platform." >&2
+            exit 1
+          fi
+          echo "packed $count prebuild(s)"
           ls -la release-assets
 
       - name: Upload to GitHub Release

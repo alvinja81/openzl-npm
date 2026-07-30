@@ -42,23 +42,33 @@ try {
 import {
   pickEncoding,
   isZstdAvailable,
+  isBrotliAvailable,
   compressGzip,
+  compressBrotli,
+  decompressBrotli,
   openzlMiddleware
 } from 'openzl-express';
 import { openzlMiddleware as fromExpress } from 'openzl-express/express';
 import * as core from 'openzl-express/core';
 
 if (pickEncoding('*') !== 'gzip') throw new Error('negotiate *');
+if (pickEncoding('gzip, deflate, br') !== 'br') throw new Error('negotiate br');
 if (typeof openzlMiddleware !== 'function') throw new Error('middleware');
 if (typeof fromExpress !== 'function') throw new Error('express subpath');
 if (typeof core.compress !== 'function') throw new Error('core.compress');
-const gz = await compressGzip(Buffer.from('hello world '.repeat(100)));
+if (typeof core.compressBrotli !== 'function') throw new Error('core.compressBrotli');
+const payload = Buffer.from('hello world '.repeat(100));
+const gz = await compressGzip(payload);
 if (!gz.length) throw new Error('gzip empty');
+const br = await compressBrotli(payload);
+if (!(await decompressBrotli(br)).equals(payload)) throw new Error('brotli roundtrip');
 console.log(JSON.stringify({
   ok: true,
   zstd: isZstdAvailable(),
+  brotli: isBrotliAvailable(),
   gzipBytes: gz.length,
-  encodings: ['openzl','zstd','gzip']
+  brotliBytes: br.length,
+  encodings: ['openzl','zstd','br','gzip']
 }));
 `;
   fs.writeFileSync(path.join(tmp, 'probe.mjs'), probe);

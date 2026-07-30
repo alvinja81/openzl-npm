@@ -7,12 +7,34 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     environment: NPM_TOKEN
     permissions:
       contents: read
       id-token: write
     steps:
       - uses: actions/checkout@v4
+      # The published tarball carries no prebuilds; postinstall fetches them
+      # from this release. Give the native build a head start so early
+      # installers are not left without one. Non-fatal: a missing prebuild only
+      # means the runtime falls back to the zli CLI / gzip.
+      - name: Wait for native prebuild assets
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -uo pipefail
+          for attempt in $(seq 1 20); do
+            names=$(gh release view "$TAG" --json assets -q '.assets[].name' 2>/dev/null | grep -c 'openzl_native-' || true)
+            if [ "${names:-0}" -gt 0 ]; then
+              echo "$names prebuild asset(s) attached."
+              exit 0
+            fi
+            echo "No prebuild assets yet (attempt $attempt/20); waiting 30s..."
+            sleep 30
+          done
+          echo "::warning::Publishing without prebuild assets attached; installs will fall back to CLI/gzip until they appear."
       - uses: actions/setup-node@v4
         with:
           node-version: '22'

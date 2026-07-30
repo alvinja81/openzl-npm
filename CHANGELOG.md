@@ -12,7 +12,17 @@ This project follows [Semantic Versioning](https://semver.org/) for the `0.x` li
   - Default quality **4**, not zlib's default of 11: on a 188 KB JSON response, quality 4 produced **32.5 KB in 1.14 ms** versus gzip's 37.6 KB in 1.86 ms — smaller *and* faster. Quality 11 reached 23.6 KB but took **181.8 ms** (~160× slower), which is a build-time setting, not a per-request one. Tune with `brotliQuality`.
   - New options: `allowBrotli`, `brotliQuality` (Express and Fastify); `preferBrotli`, `allowBrotli`, `starMeansBrotli` on `pickEncoding`.
 
+### Fixed — native prebuild delivery (no platform was getting one)
+- **Prebuilds now actually reach releases.** `attach-release` in `build-native.yml` used a plain `needs:` on the build matrix, so a single failing platform skipped it entirely. Windows fails on every run (see below) and an Intel-macOS runner stalled for 5+ hours, so the job was skipped on **every release to date** — v0.4.x releases carry **zero** prebuild assets, and `postinstall` 404s for every platform. It now runs with `if: always()`, packs whatever platforms succeeded, and fails only when nothing built at all. linux-x64, linux-arm64, and darwin-arm64 each build in ~90 s and were being discarded.
+- **Job timeouts added** to every workflow (40 min for native builds). Runs previously went 5–19 hours before failing.
+- **Windows and Intel-macOS legs are marked optional** (`continue-on-error`). OpenZL's C sources do not compile under MSVC (`C2099: initializer is not a constant` in `encoder_registry.c`), so that leg is expected to fail until upstream changes; it no longer blocks everyone else. gzip/brotli/zstd are unaffected on Windows.
+- **`@openzl-cli` binary publishing had the identical defect** in `build-binaries.yml` and got the same fix.
+
 ### Changed
+- **The npm tarball no longer bundles prebuilds** (`files` drops `prebuilds`). It previously shipped whatever happened to be in the publisher's working directory — in practice darwin-arm64 only — which made the published artifact depend on the publish machine. Every platform now obtains the addon the same way, via `postinstall`. Package size drops **1.6 MB → 374 kB** (unpacked 5.6 MB → 1.8 MB).
+- `postinstall` **verifies an addon before trusting it**: it loads the binary and runs a compress/decompress roundtrip. A corrupt or truncated file is discarded and re-fetched instead of being kept forever — previously any existing file short-circuited the installer, so a bad download could never repair itself.
+- `postinstall` **detects musl libc** (Alpine) and skips the download rather than installing a glibc binary that cannot load there.
+- Publishing waits (up to 10 min, non-fatal) for prebuild assets to be attached, so installs immediately after a release find one.
 - **Negotiation order is now openzl → zstd → br → gzip** for equal q-values. A client sending a normal browser header (`gzip, deflate, br`) now receives **brotli instead of gzip**; `gzip, deflate, br, zstd` still receives zstd. Explicit q-values continue to win over this order (`br;q=0.5, gzip` → gzip), and `Accept-Encoding: *` still means gzip only. Set `allowBrotli: false` to keep the previous behavior.
 - **`fallbackToGzip` now gates every OpenZL fallback uniformly.** Previously a zstd fallback happened even with `fallbackToGzip: false`, which contradicted the option. With it disabled, a failed OpenZL encode now sends the body uncompressed.
 
@@ -24,8 +34,11 @@ This project follows [Semantic Versioning](https://semver.org/) for the `0.x` li
 - **`Cache-Control: no-transform` honored** (RFC 9110) in both Express and Fastify adapters — such responses are never re-encoded.
 - **`Vary` header appended instead of overwritten** — `Vary: Origin` set by cors or other middleware now survives (`Vary: Origin, Accept-Encoding`). Fastify plugin also sets `Vary` on all negotiable responses, not only compressed ones.
 
+### Added — tests
 - Regression tests for the threshold, `no-transform`, and `Vary` fixes in the Express and Fastify smoke suites, plus brotli coverage (negotiation, streaming, `sendFile`, threshold, `*`-is-not-`br`, 24 MiB integrity).
-- **`scripts/test-stream.mjs`** (`npm run test:stream`, wired into `npm test` and CI): backpressure under a paused client, large-body integrity for gzip and zstd, client abort survival, double-end and write-after-end safety. Fails on stall instead of hanging.
+- **`scripts/test-stream.mjs`** (`npm run test:stream`): backpressure under a paused client, large-body integrity for gzip, brotli, and zstd, client abort survival, double-end and write-after-end safety. Fails on stall instead of hanging.
+- **`scripts/test-prebuild.mjs`**: prebuild target selection (including musl), addon verification (rejects corrupt/missing binaries), release-asset naming agreement with the workflow, and assertions that the workflow still attaches prebuilds when a platform fails.
+- `pack-smoke.mjs` now exercises brotli and the `br` negotiation path against the packed tarball. It caught a real break in this release: `install-native.mjs` imported a helper missing from `files`, which would have crashed `postinstall` on every install.
 
 ## [0.4.3] — 2026-07-30
 

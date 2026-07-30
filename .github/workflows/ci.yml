@@ -18,6 +18,7 @@ jobs:
           - os: ubuntu-latest
             node: 24
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -32,6 +33,7 @@ jobs:
           node scripts/test-middleware.mjs
           node scripts/test-fastify.mjs
           node scripts/test-stream.mjs
+          node scripts/test-prebuild.mjs
           node scripts/test-trust.mjs
       - name: Release check
         run: node scripts/release-check.mjs
@@ -40,6 +42,7 @@ jobs:
 
   test-windows:
     runs-on: windows-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

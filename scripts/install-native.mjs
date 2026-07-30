@@ -17,23 +17,46 @@ import https from 'https';
 import http from 'http';
 import { execSync } from 'child_process';
 import { fileURLToPath } from 'url';
+import {
+  assetTarget,
+  isMuslLinux,
+  prebuildDir,
+  verifyAddon
+} from './lib/platform-target.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const platform = `${process.platform}-${process.arch}`;
+const platform = prebuildDir();
+const target = assetTarget();
 const destDir = path.join(root, 'prebuilds', platform);
 const destFile = path.join(destDir, 'openzl_native.node');
 
 const log = (...a) => console.log('[openzl-native]', ...a);
 const warn = (...a) => console.warn('[openzl-native]', ...a);
 
+/** Drop an unusable binary so a later install can replace it. */
+const discard = (file, reason) => {
+  warn(`discarding unusable prebuild (${reason})`);
+  try {
+    fs.unlinkSync(file);
+  } catch {
+    // ignore
+  }
+};
+
 if (process.env.OPENZL_SKIP_NATIVE === '1' || process.env.OPENZL_NATIVE === '0') {
   log('skipped (OPENZL_SKIP_NATIVE or OPENZL_NATIVE=0)');
   process.exit(0);
 }
 
+// Trust an existing file only if it still loads — a truncated or
+// wrong-architecture binary would otherwise be kept forever.
 if (fs.existsSync(destFile)) {
-  log('already present:', destFile);
-  process.exit(0);
+  const check = verifyAddon(destFile);
+  if (check.ok) {
+    log('already present:', destFile);
+    process.exit(0);
+  }
+  discard(destFile, check.reason);
 }
 
 // Also accept cmake-js local build
@@ -41,8 +64,12 @@ const localBuild = path.join(root, 'native/build/Release/openzl_native.node');
 if (fs.existsSync(localBuild)) {
   fs.mkdirSync(destDir, { recursive: true });
   fs.copyFileSync(localBuild, destFile);
-  log('copied local build →', destFile);
-  process.exit(0);
+  const check = verifyAddon(destFile);
+  if (check.ok) {
+    log('copied local build →', destFile);
+    process.exit(0);
+  }
+  discard(destFile, `local build unusable: ${check.reason}`);
 }
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
@@ -114,9 +141,18 @@ async function main() {
     urls.push(process.env.OPENZL_NATIVE_URL);
   }
 
+  if (isMuslLinux() && !process.env.OPENZL_NATIVE_URL) {
+    // No musl prebuilds are published; a glibc binary would fail to load.
+    warn(
+      `musl libc detected (${target}) — no prebuild is published for it. ` +
+        `Runtime will use zli CLI / gzip. Build one with: npm run build:native`
+    );
+    process.exit(0);
+  }
+
   // GitHub release asset naming from build-native.yml
   const tag = `v${version}`;
-  const asset = `openzl_native-v${version}-${platform}.tar.gz`;
+  const asset = `openzl_native-v${version}-${target}.tar.gz`;
   urls.push(
     `https://github.com/${repoPath}/releases/download/${tag}/${asset}`
   );
@@ -125,17 +161,21 @@ async function main() {
     try {
       log('trying', url);
       await downloadTo(url, destFile);
-      if (fs.existsSync(destFile)) {
-        log('installed', destFile);
-        return;
+      if (!fs.existsSync(destFile)) continue;
+      const check = verifyAddon(destFile);
+      if (!check.ok) {
+        discard(destFile, check.reason);
+        continue;
       }
+      log('installed', destFile);
+      return;
     } catch (e) {
       warn('download failed:', e.message);
     }
   }
 
   warn(
-    `no prebuild for ${platform}. Runtime will use zli CLI / gzip. ` +
+    `no usable prebuild for ${target}. Runtime will use zli CLI / gzip. ` +
       `Optional: npm run build:native (needs OpenZL sources + cmake).`
   );
   process.exit(0);

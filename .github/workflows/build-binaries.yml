@@ -18,14 +18,19 @@ jobs:
             platform: darwin-arm64
           - os: macos-15-intel
             platform: darwin-x64
+            optional: true
           - os: ubuntu-latest
             platform: linux-x64
           - os: ubuntu-24.04-arm
             platform: linux-arm64
+          # OpenZL does not build under MSVC yet (C2099 in encoder_registry.c).
           - os: windows-latest
             platform: win32-x64
+            optional: true
 
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    continue-on-error: ${{ matrix.optional == true }}
 
     steps:
       - name: Checkout code
@@ -94,8 +99,11 @@ jobs:
           retention-days: 30
 
   package-and-publish:
+    # Ship the platforms that built; one failing leg must not block the rest.
+    if: always()
     needs: build-binaries
     runs-on: macos-latest
+    timeout-minutes: 30
 
     # The NPM_TOKEN secret was created as an *environment* secret in a GitHub
     # environment named "NPM_TOKEN". A job only sees an environment's secrets
@@ -129,7 +137,13 @@ jobs:
 
       - name: Extract binaries to package
         run: |
+          set -euo pipefail
           mkdir -p @openzl-cli/build/binaries
+          shopt -s nullglob
+          if [ -z "$(ls -A binaries 2>/dev/null)" ]; then
+            echo "No zli binaries were produced by any platform." >&2
+            exit 1
+          fi
           for dir in binaries/zli-*/; do
             platform=$(basename "$dir")
             platform=${platform#zli-}

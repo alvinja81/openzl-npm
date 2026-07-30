@@ -82,10 +82,23 @@ npm install @amirja811/openzl-cli   # prebuilt `zli` when available for your pla
 | zstd via `zlib` | typically **≥ 22.15** (auto-skipped if missing) |
 | OpenZL encode | native prebuild and/or `zli` CLI (optional) |
 
-> **Native prebuild availability:** the bundled native addon currently ships for
-> **macOS arm64 only**. On Linux and Windows, OpenZL encode requires the optional
-> `@amirja811/openzl-cli` package or building from source (`npm run build:native`).
-> gzip, brotli, and zstd work everywhere regardless. Linux prebuilds are planned.
+**OpenZL native addon availability.** gzip, brotli, and zstd work everywhere and
+need none of this — the table below is only about the optional OpenZL encoder.
+The npm tarball ships no binaries; `postinstall` fetches the one matching your
+platform from the matching GitHub Release, and silently falls back to the `zli`
+CLI or gzip/br/zstd if it cannot.
+
+| Platform | OpenZL native |
+|----------|---------------|
+| linux-x64 / linux-arm64 (glibc) | prebuild published |
+| darwin-arm64 | prebuild published |
+| darwin-x64 | best effort — Intel macOS runners are unreliable in CI |
+| linux musl (Alpine) | not published — build locally (`npm run build:native`) |
+| win32 | **not available**: OpenZL's C sources do not compile under MSVC yet |
+
+Offline or firewalled installs get no addon (by design, never fatal). Force a
+specific binary with `OPENZL_NATIVE_URL`, skip the step with
+`OPENZL_SKIP_NATIVE=1`, or build from source with `npm run build:native`.
 
 ---
 
