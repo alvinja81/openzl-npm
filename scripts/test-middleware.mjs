@@ -23,6 +23,11 @@ const root = path.resolve(__dirname, '..');
 const tmpFile = path.join(root, 'tmp-phase5-static.json');
 
 const app = express();
+// Simulates cors-style middleware that sets Vary before ours runs
+app.use((_req, res, next) => {
+  res.setHeader('Vary', 'Origin');
+  next();
+});
 app.use(
   openzlMiddleware({
     threshold: 100,
@@ -59,6 +64,22 @@ app.get('/stream', (_req, res) => {
 
 app.get('/file', (_req, res) => {
   res.sendFile(tmpFile);
+});
+
+app.get('/tiny', (_req, res) => {
+  res.type('json').send('{"ok":true}');
+});
+
+app.get('/tiny-stream', (_req, res) => {
+  res.type('json');
+  res.write('{"ok":');
+  res.write('true}');
+  res.end();
+});
+
+app.get('/no-transform', (_req, res) => {
+  res.set('Cache-Control', 'no-transform');
+  res.type('json').send(bigJson);
 });
 
 fs.writeFileSync(tmpFile, bigJson);
@@ -138,6 +159,31 @@ const server = app.listen(0, async () => {
       Promise.resolve(zlib.gunzipSync(b))
     );
     await check('small identity', '/json', 'identity', null, async (b) => b);
+
+    // Phase 1: threshold enforced on the gzip/zstd path (buffered and multi-write)
+    for (const [name, p] of [
+      ['tiny below threshold', '/tiny'],
+      ['tiny stream below threshold', '/tiny-stream']
+    ]) {
+      const r = await request(port, p, 'gzip');
+      const ce = r.headers['content-encoding'];
+      const ok = !ce && r.body.toString() === '{"ok":true}';
+      console.log(ok ? '✓' : '✗', name, ce || 'identity', r.body.length);
+      if (!ok) failed++;
+    }
+
+    // Phase 1: Cache-Control: no-transform is honored
+    await check('no-transform identity', '/no-transform', 'gzip', null, async (b) => b);
+
+    // Phase 1: Vary appends instead of clobbering earlier middleware
+    {
+      const r = await request(port, '/json', 'gzip');
+      const vary = String(r.headers['vary'] ?? '');
+      const fields = vary.split(',').map((f) => f.trim().toLowerCase());
+      const ok = fields.includes('origin') && fields.includes('accept-encoding');
+      console.log(ok ? '✓' : '✗', 'vary append', vary);
+      if (!ok) failed++;
+    }
 
     // OpenZL path only when native or zli is present (optionalDependency)
     if (openzlOk) {

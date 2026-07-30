@@ -5,6 +5,16 @@ All notable changes to this project are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project follows [Semantic Versioning](https://semver.org/) for the `0.x` line (breaking changes allowed with minor bumps until 1.0).
 
+## [0.5.0] — 2026-07-30
+
+### Fixed
+- **`threshold` now enforced on the gzip/zstd path** (Express adapter). Responses buffer until the threshold is crossed, then switch to streaming compression; smaller bodies pass through untouched. Previously a 4-byte body could be gzip'd into a larger payload. A declared `Content-Length` below the threshold short-circuits to identity immediately.
+- **`Cache-Control: no-transform` honored** (RFC 9110) in both Express and Fastify adapters — such responses are never re-encoded.
+- **`Vary` header appended instead of overwritten** — `Vary: Origin` set by cors or other middleware now survives (`Vary: Origin, Accept-Encoding`). Fastify plugin also sets `Vary` on all negotiable responses, not only compressed ones.
+
+### Added
+- Regression tests for all three fixes in the Express and Fastify smoke suites.
+
 ## [0.4.3] — 2026-07-30
 
 ### Added

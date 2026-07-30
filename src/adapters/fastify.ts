@@ -18,7 +18,9 @@ import {
   pickEncoding
 } from '../core/index.js';
 import {
+  appendVary,
   compressBody,
+  hasNoTransform,
   isCompressibleType,
   type SharedCodecOptions
 } from './shared.js';
@@ -91,9 +93,18 @@ const plugin: FastifyPluginAsync<OpenZLFastifyOptions> = async (
       return payload;
     }
 
+    if (hasNoTransform(reply.getHeader('cache-control') as string | string[] | undefined)) {
+      return payload;
+    }
+
     const type = String(reply.getHeader('content-type') ?? '');
     const allow = filter?.(request, reply) ?? isCompressibleType(type);
     if (!allow) return payload;
+
+    reply.header(
+      'vary',
+      appendVary(reply.getHeader('vary') as string | string[] | undefined, 'Accept-Encoding')
+    );
 
     const accept = request.headers['accept-encoding'];
     const probe = pickEncoding(accept, {
@@ -127,7 +138,6 @@ const plugin: FastifyPluginAsync<OpenZLFastifyOptions> = async (
         return payload;
       }
 
-      reply.header('vary', 'Accept-Encoding');
       reply.header('content-encoding', result.encoding);
       reply.header('content-length', String(result.body.length));
       if (result.encoding === 'openzl' && result.profile) {

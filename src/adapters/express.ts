@@ -13,6 +13,7 @@ import {
   type ContentEncoding
 } from '../core/index.js';
 import type { OpenZLMiddlewareOptions } from '../types.js';
+import { appendVary, hasNoTransform } from './shared.js';
 
 /** Default compressible Content-Types (compression-package style). */
 const DEFAULT_TYPES = /json|text|javascript|xml|svg|wasm|yaml|toml|csv|markdown|html/i;
@@ -93,7 +94,7 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
       return next();
     }
 
-    res.setHeader('Vary', 'Accept-Encoding');
+    res.setHeader('Vary', appendVary(res.getHeader('Vary'), 'Accept-Encoding'));
 
     const accept = req.headers['accept-encoding'];
     let encoding: ContentEncoding = pick(accept);
@@ -104,7 +105,7 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
     const originalWrite = res.write.bind(res);
     const originalEnd = res.end.bind(res);
 
-    type Mode = 'pending' | 'identity' | 'stream' | 'buffer';
+    type Mode = 'pending' | 'identity' | 'collect' | 'stream' | 'buffer';
     let mode: Mode = 'pending';
     let codecStream: Transform | null = null;
     let chunks: Buffer[] = [];
@@ -131,7 +132,9 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
     };
 
     const canCompressNow = (): boolean =>
-      !alreadyEncoded() && typeFilter(req, res);
+      !alreadyEncoded() &&
+      !hasNoTransform(res.getHeader('cache-control')) &&
+      typeFilter(req, res);
 
     const startStream = (which: 'gzip' | 'zstd'): void => {
       if (codecStream) return;
@@ -171,26 +174,39 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
 
       if (!canCompressNow()) {
         mode = 'identity';
-        log('skip compress (filter or already encoded)');
+        log('skip compress (filter, no-transform, or already encoded)');
         return mode;
       }
 
-      if (encoding === 'gzip') {
-        mode = 'stream';
-        startStream('gzip');
+      const declaredLength = Number(res.getHeader('content-length'));
+      if (Number.isFinite(declaredLength) && declaredLength < threshold) {
+        mode = 'identity';
+        log(`below threshold (content-length ${declaredLength} < ${threshold}), identity`);
         return mode;
       }
 
-      if (encoding === 'zstd') {
-        mode = 'stream';
-        startStream('zstd');
-        // startStream may fall back to buffer
+      if (encoding === 'gzip' || encoding === 'zstd') {
+        // Buffer until threshold, then switch to streaming (see write hook)
+        mode = 'collect';
         return mode;
       }
 
       // openzl: buffer whole body
       mode = 'buffer';
       return mode;
+    };
+
+    const collectToStream = (): void => {
+      mode = 'stream';
+      startStream(encoding === 'zstd' ? 'zstd' : 'gzip');
+      if (!codecStream) return; // startStream fell back to buffer mode
+      const pending = chunks;
+      chunks = [];
+      length = 0;
+      for (const c of pending) {
+        streamIn += c.length;
+        codecStream.write(c);
+      }
     };
 
     const fallbackAfterOpenZL = async (
@@ -341,6 +357,16 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
 
       if (m === 'identity') {
         return originalWrite(chunk as never, enc as never, callback as never);
+      }
+
+      if (m === 'collect') {
+        if (buf.length) {
+          chunks.push(buf);
+          length += buf.length;
+        }
+        if (length >= threshold) collectToStream();
+        if (callback) callback(null);
+        return true;
       }
 
       if (m === 'stream' && codecStream) {

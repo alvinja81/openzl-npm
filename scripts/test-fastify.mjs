@@ -25,17 +25,26 @@ const big = {
 const app = Fastify({ logger: false });
 await app.register(openzlFastify, { threshold: 100, debug: false });
 app.get('/json', async () => big);
+app.get('/tiny', async () => ({ ok: true }));
+app.get('/no-transform', async (_req, reply) => {
+  reply.header('cache-control', 'no-transform');
+  return big;
+});
+app.get('/vary', async (_req, reply) => {
+  reply.header('vary', 'Origin');
+  return big;
+});
 await app.listen({ port: 0, host: '127.0.0.1' });
 const port = app.server.address().port;
 
-function request(acceptEncoding) {
+function request(acceptEncoding, path = '/json') {
   return new Promise((resolve, reject) => {
     http
       .get(
         {
           host: '127.0.0.1',
           port,
-          path: '/json',
+          path,
           headers: { 'Accept-Encoding': acceptEncoding }
         },
         (res) => {
@@ -44,6 +53,7 @@ function request(acceptEncoding) {
           res.on('end', () =>
             resolve({
               ce: res.headers['content-encoding'],
+              vary: res.headers['vary'],
               body: Buffer.concat(chunks)
             })
           );
@@ -84,6 +94,27 @@ console.log(
 let failed = 0;
 // Heroes
 failed += await check('gzip', 'gzip', 'gzip', async (b) => zlib.gunzipSync(b));
+
+// Phase 1: threshold, no-transform, vary append
+{
+  const tiny = await request('gzip', '/tiny');
+  const ok = !tiny.ce && tiny.body.toString().includes('"ok"');
+  console.log(ok ? '✓' : '✗', 'fastify tiny below threshold', tiny.ce || 'identity');
+  if (!ok) failed++;
+}
+{
+  const nt = await request('gzip', '/no-transform');
+  const ok = !nt.ce && nt.body.toString().includes('item-0');
+  console.log(ok ? '✓' : '✗', 'fastify no-transform identity', nt.ce || 'identity');
+  if (!ok) failed++;
+}
+{
+  const v = await request('gzip', '/vary');
+  const fields = String(v.vary ?? '').split(',').map((f) => f.trim().toLowerCase());
+  const ok = fields.includes('origin') && fields.includes('accept-encoding');
+  console.log(ok ? '✓' : '✗', 'fastify vary append', v.vary);
+  if (!ok) failed++;
+}
 if (isZstdAvailable()) {
   failed += await check('zstd', 'zstd', 'zstd', decompressZstd);
 }

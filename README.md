@@ -27,7 +27,9 @@ Works with **Express**, **Fastify**, or **no framework** (`openzl-express/core`)
 - `Accept-Encoding: *` → **gzip** (never openzl, never zstd by default)
 - Clients must send **`openzl` explicitly** to get OpenZL
 - Missing OpenZL CLI/native → **install still succeeds**; gzip/zstd keep working
-- `Vary: Accept-Encoding` is set when middleware runs
+- `Vary: Accept-Encoding` is **appended** (existing `Vary: Origin` from cors survives)
+- `Cache-Control: no-transform` responses are never re-encoded (RFC 9110)
+- Bodies below `threshold` pass through untouched on every codec path
 
 This is **not** “always better than gzip.” Measure against gzip/zstd on *your* payloads.
 
@@ -77,7 +79,7 @@ const app = express();
 
 app.use(
   openzlMiddleware({
-    threshold: 1024,          // min bytes to compress (see options table for 0.4.x caveat)
+    threshold: 1024,          // skip bodies smaller than this
     profile: 'timeseries',    // or 'serial' | 'api-list' | path to .zlc
     fallbackToGzip: true,
   })
@@ -239,7 +241,7 @@ Browsers almost never send `openzl`, so they get **gzip/zstd** only.
 | Option | Default | Description |
 |--------|---------|-------------|
 | `enabled` | `true` | Master switch |
-| `threshold` | `1024` | Minimum body size (bytes) to compress. **Known limitation (0.4.x):** only enforced on the buffered (openzl) path; gzip/zstd streaming responses are compressed regardless of size. Fix planned for 0.5. |
+| `threshold` | `1024` | Minimum body size (bytes) to compress. Enforced on all paths: responses buffer until the threshold is crossed, then switch to streaming compression (below it, bodies pass through untouched). |
 | `profile` | `'serial'` | OpenZL profile name or path to `.zlc` |
 | `selectProfile` | — | `(req, …) => profile` per request |
 | `fallbackToGzip` | `true` | On OpenZL failure, try gzip/zstd |

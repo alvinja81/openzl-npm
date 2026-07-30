@@ -32,6 +32,35 @@ export const isCompressibleType = (contentType: string | undefined | null): bool
   return DEFAULT_COMPRESSIBLE_TYPE.test(contentType);
 };
 
+/** RFC 9110 §7.7: `Cache-Control: no-transform` forbids changing Content-Encoding. */
+const NO_TRANSFORM = /(?:^|,)\s*no-transform\s*(?:,|$)/i;
+
+export const hasNoTransform = (
+  cacheControl: string | number | string[] | undefined | null
+): boolean => {
+  if (cacheControl == null) return false;
+  const value = Array.isArray(cacheControl)
+    ? cacheControl.join(',')
+    : String(cacheControl);
+  return NO_TRANSFORM.test(value);
+};
+
+/**
+ * Append a field to an existing Vary header value without clobbering it
+ * (`Vary: Origin` from cors must survive). `*` swallows everything.
+ */
+export const appendVary = (
+  existing: string | number | string[] | undefined | null,
+  field: string
+): string => {
+  if (existing == null || existing === '') return field;
+  const current = Array.isArray(existing) ? existing.join(', ') : String(existing);
+  const fields = current.split(',').map((f) => f.trim()).filter(Boolean);
+  if (fields.includes('*')) return '*';
+  if (fields.some((f) => f.toLowerCase() === field.toLowerCase())) return current;
+  return `${current}, ${field}`;
+};
+
 export type CompressBodyResult = {
   body: Buffer;
   encoding: ContentEncoding;
