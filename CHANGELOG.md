@@ -8,12 +8,16 @@ This project follows [Semantic Versioning](https://semver.org/) for the `0.x` li
 ## [0.5.0] — 2026-07-30
 
 ### Fixed
+- **Backpressure now reaches the producer.** Codec output drains into the socket through a `Writable` sink, so each chunk's flush callback (rather than a shared `drain` event that could be lost) gates the next write. `res.write` returns the codec's backpressure signal and `drain` listeners are forwarded to the codec, so `pipe()`-ing a large response to a slow client no longer buffers it in memory — measured 1 MiB in flight for a 24 MiB response while the client refused to read.
+- **A codec error no longer hangs the client.** Failures now end the response: 500 when nothing has been sent yet, connection destroy once part of an encoded body is already on the wire (a silent truncation would hand the client a corrupt frame). Client aborts mid-response are treated as ordinary traffic, not logged as server errors.
+- **Double `res.end()` and write-after-end are no longer able to corrupt a compressed body** — the stream path sets its ended guard, and post-end writes are dropped.
 - **`threshold` now enforced on the gzip/zstd path** (Express adapter). Responses buffer until the threshold is crossed, then switch to streaming compression; smaller bodies pass through untouched. Previously a 4-byte body could be gzip'd into a larger payload. A declared `Content-Length` below the threshold short-circuits to identity immediately.
 - **`Cache-Control: no-transform` honored** (RFC 9110) in both Express and Fastify adapters — such responses are never re-encoded.
 - **`Vary` header appended instead of overwritten** — `Vary: Origin` set by cors or other middleware now survives (`Vary: Origin, Accept-Encoding`). Fastify plugin also sets `Vary` on all negotiable responses, not only compressed ones.
 
 ### Added
-- Regression tests for all three fixes in the Express and Fastify smoke suites.
+- Regression tests for the threshold, `no-transform`, and `Vary` fixes in the Express and Fastify smoke suites.
+- **`scripts/test-stream.mjs`** (`npm run test:stream`, wired into `npm test` and CI): backpressure under a paused client, large-body integrity for gzip and zstd, client abort survival, double-end and write-after-end safety. Fails on stall instead of hanging.
 
 ## [0.4.3] — 2026-07-30
 

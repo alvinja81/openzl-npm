@@ -31,6 +31,7 @@ jobs:
         run: |
           node scripts/test-middleware.mjs
           node scripts/test-fastify.mjs
+          node scripts/test-stream.mjs
           node scripts/test-trust.mjs
       - name: Release check
         run: node scripts/release-check.mjs

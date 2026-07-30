@@ -30,6 +30,8 @@ Works with **Express**, **Fastify**, or **no framework** (`openzl-express/core`)
 - `Vary: Accept-Encoding` is **appended** (existing `Vary: Origin` from cors survives)
 - `Cache-Control: no-transform` responses are never re-encoded (RFC 9110)
 - Bodies below `threshold` pass through untouched on every codec path
+- Streaming respects backpressure end to end — a slow client throttles the producer instead of filling server memory
+- A codec failure ends the response (500, or connection close mid-body) rather than leaving the client waiting
 
 This is **not** “always better than gzip.” Measure against gzip/zstd on *your* payloads.
 

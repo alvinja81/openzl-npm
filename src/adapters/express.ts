@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import type { Transform } from 'stream';
 import fs from 'fs';
-import { finished } from 'stream';
+import { finished, Writable } from 'stream';
 import {
   compress,
   compressGzip,
@@ -104,10 +104,13 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
 
     const originalWrite = res.write.bind(res);
     const originalEnd = res.end.bind(res);
+    const rawOn = res.on.bind(res);
+    const rawOnce = res.once.bind(res);
 
     type Mode = 'pending' | 'identity' | 'collect' | 'stream' | 'buffer';
     let mode: Mode = 'pending';
     let codecStream: Transform | null = null;
+    let codecSink: Writable | null = null;
     let chunks: Buffer[] = [];
     let length = 0;
     let streamIn = 0;
@@ -115,6 +118,60 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
     let streamStarted = 0;
     let ended = false;
     let flushing = false;
+    let failed = false;
+    let aborted = false;
+
+    /**
+     * While the codec owns the write path, `res.write` returns the codec's
+     * backpressure signal — so `drain` must come from the codec too, or a
+     * paused producer would wait on a socket event that never fires.
+     * Listeners registered before the codec exists are queued here.
+     */
+    type DrainListener = { once: boolean; listener: (...args: never[]) => void };
+    let pendingDrain: DrainListener[] = [];
+
+    const adoptDrainListeners = (): void => {
+      const queued = pendingDrain;
+      pendingDrain = [];
+      for (const { once, listener } of queued) {
+        if (codecStream) {
+          if (once) codecStream.once('drain', listener);
+          else codecStream.on('drain', listener);
+        } else if (once) {
+          rawOnce('drain', listener);
+        } else {
+          rawOn('drain', listener);
+        }
+      }
+    };
+
+    // A client hanging up mid-response is ordinary traffic, not a server fault:
+    // stop compressing and keep the resulting write-after-destroy quiet.
+    rawOnce('close', () => {
+      if (res.writableEnded) return;
+      aborted = true;
+      codecStream?.destroy();
+    });
+
+    /** A codec failure must never leave the client waiting forever. */
+    const teardown = (err: Error): void => {
+      if (res.writableEnded || res.destroyed) return;
+      ended = true;
+      if (res.headersSent) {
+        // Part of an encoded body is already on the wire; ending quietly would
+        // hand the client a truncated frame, so cut the connection instead.
+        res.destroy(err);
+        return;
+      }
+      res.removeHeader('Content-Encoding');
+      res.removeHeader('Content-Length');
+      res.statusCode = 500;
+      try {
+        originalEnd();
+      } catch {
+        res.destroy(err);
+      }
+    };
 
     const toBuffer = (chunk: unknown, enc?: WriteEncoding): Buffer => {
       if (chunk == null || chunk === '') return Buffer.alloc(0);
@@ -154,18 +211,41 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
       streamIn = 0;
       streamOut = 0;
       streamStarted = performance.now();
-      stream.on('data', (c: Buffer) => {
-        streamOut += c.length;
-        originalWrite(c);
+
+      /**
+       * Codec output → socket. Draining through a Writable (rather than a
+       * 'data' listener that pauses on `write() === false`) hands the
+       * backpressure handshake to Node: each chunk's write callback fires once
+       * the socket has flushed it, so the resume signal is tied to the chunk
+       * and cannot be lost the way a shared 'drain' event can. Without this a
+       * slow client would make us buffer the whole response in memory.
+       */
+      const sink = new Writable({
+        write(chunk: Buffer, _enc, cb) {
+          streamOut += chunk.length;
+          originalWrite(chunk, cb as never);
+        }
       });
-      stream.on('error', (err: Error) => {
+      codecSink = sink;
+
+      const onStreamError = (err: Error): void => {
+        if (failed) return;
+        failed = true;
+        if (aborted) return;
         console.error(`[OpenZL] ${which} stream error:`, err.message);
         if (onError) onError(err, req, res);
-      });
-      stream.on('end', () => {
+        teardown(err);
+      };
+
+      sink.on('finish', () => {
+        if (failed) return;
         reportCompress(which, streamIn, streamOut, performance.now() - streamStarted);
         originalEnd();
       });
+      stream.on('error', onStreamError);
+      sink.on('error', onStreamError);
+      stream.pipe(sink);
+      adoptDrainListeners();
       log(`${which} streaming started`);
     };
 
@@ -174,6 +254,7 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
 
       if (!canCompressNow()) {
         mode = 'identity';
+        adoptDrainListeners();
         log('skip compress (filter, no-transform, or already encoded)');
         return mode;
       }
@@ -181,6 +262,7 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
       const declaredLength = Number(res.getHeader('content-length'));
       if (Number.isFinite(declaredLength) && declaredLength < threshold) {
         mode = 'identity';
+        adoptDrainListeners();
         log(`below threshold (content-length ${declaredLength} < ${threshold}), identity`);
         return mode;
       }
@@ -268,7 +350,7 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
     };
 
     const flushBuffer = async (): Promise<void> => {
-      if (flushing || ended) return;
+      if (flushing || ended || failed || aborted) return;
       flushing = true;
 
       const body =
@@ -282,6 +364,7 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
       if (body.length < threshold) {
         log(`below threshold (${body.length} < ${threshold}), identity`);
         mode = 'identity';
+        adoptDrainListeners();
         if (body.length) originalWrite(body);
         originalEnd();
         ended = true;
@@ -349,6 +432,8 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
       encodingOrCb?: WriteEncoding | ((error?: Error | null) => void),
       cb?: (error?: Error | null) => void
     ): boolean {
+      if (ended || failed || aborted) return false;
+
       const enc = typeof encodingOrCb === 'function' ? undefined : encodingOrCb;
       const callback = typeof encodingOrCb === 'function' ? encodingOrCb : cb;
       const buf = toBuffer(chunk, enc);
@@ -381,6 +466,30 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
       if (callback) callback(null);
       return true;
     };
+
+    // Route 'drain' to whichever writable currently applies backpressure.
+    // Everything else (close, finish, error, …) goes to the response untouched.
+    const hookDrain = (
+      once: boolean,
+      original: (type: string, listener: (...args: never[]) => void) => Response
+    ) =>
+      function (type: string, listener: (...args: never[]) => void): Response {
+        if (type !== 'drain') return original(type, listener);
+        if (codecStream) {
+          if (once) codecStream.once('drain', listener);
+          else codecStream.on('drain', listener);
+          return res;
+        }
+        if (mode === 'identity') return original(type, listener);
+        pendingDrain.push({ once, listener });
+        return res;
+      };
+
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    (res as any).on = hookDrain(false, rawOn as any);
+    (res as any).addListener = hookDrain(false, rawOn as any);
+    (res as any).once = hookDrain(true, rawOnce as any);
+    /* eslint-enable @typescript-eslint/no-explicit-any */
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (res as any).end = function (
@@ -415,9 +524,11 @@ export const openzlMiddleware = (options: OpenZLMiddlewareOptions = {}) => {
       }
 
       if (mode === 'stream' && codecStream) {
+        ended = true;
         codecStream.end();
         if (callback) {
-          finished(codecStream, () => callback());
+          // Report completion once the bytes reach the socket, not merely the codec
+          finished(codecSink ?? codecStream, () => callback());
         }
         return res;
       }
