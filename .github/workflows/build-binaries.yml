@@ -8,6 +8,11 @@ on:
   release:
     types: [ published ]
 
+# Superseded runs only add to the runner queue; drop them.
+concurrency:
+  group: binaries-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-binaries:
     strategy:
@@ -102,7 +107,8 @@ jobs:
     # Ship the platforms that built; one failing leg must not block the rest.
     if: always()
     needs: build-binaries
-    runs-on: macos-latest
+    # Packing and publishing needs no macOS; those runners queue for hours here.
+    runs-on: ubuntu-latest
     timeout-minutes: 30
 
     # The NPM_TOKEN secret was created as an *environment* secret in a GitHub

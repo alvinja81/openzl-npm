@@ -6,19 +6,30 @@ on:
   pull_request:
     branches: [ main, master ]
 
+# Superseded runs only add to the runner queue; drop them.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
-        node: [18, 20, 22]
-        # Node 24 optional for zstd coverage on newer runners
+        # Linux carries the required coverage: it is the only platform whose
+        # runners are reliably available here, and it runs in ~20s.
+        os: [ubuntu-latest]
+        node: [18, 20, 22, 24]
         include:
-          - os: ubuntu-latest
-            node: 24
+          # macOS runners on this account have queued ~16h and then been killed
+          # by GitHub's 6-hour job ceiling, so keep one best-effort darwin leg
+          # rather than three that can never report.
+          - os: macos-latest
+            node: 22
+            optional: true
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
+    continue-on-error: ${{ matrix.optional == true }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

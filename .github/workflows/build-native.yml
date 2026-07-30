@@ -21,6 +21,11 @@ on:
     types: [ published ]
   workflow_dispatch:
 
+# Superseded runs only add to the runner queue; drop them.
+concurrency:
+  group: native-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-native:
     strategy:
@@ -49,6 +54,8 @@ jobs:
     # Without this a stalled runner burned 5+ hours per job.
     timeout-minutes: 40
     continue-on-error: ${{ matrix.optional == true }}
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout
@@ -143,48 +150,55 @@ jobs:
           path: prebuilds/${{ matrix.platform }}/
           retention-days: 30
 
-  attach-release:
-    # `always()` is essential: a single failing platform (Windows, or a flaky
-    # Intel macOS runner) must not withhold the prebuilds that did build.
-    # Without it this job was skipped on every release and no platform ever
-    # received a prebuild.
-    if: always() && github.event_name == 'release'
-    needs: build-native
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      contents: write
-    steps:
-      - name: Download prebuilds
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-
-      - name: Pack prebuild tarballs
+      # Each platform attaches its own asset the moment it is built. A gather
+      # job would have to `needs:` the whole matrix, and macOS runners here have
+      # queued for many hours — that would hold back Linux prebuilds that were
+      # ready in 90 seconds.
+      - name: Pack prebuild tarball
+        if: github.event_name == 'release'
+        shell: bash
         run: |
           set -euo pipefail
-          mkdir -p release-assets
           version="${{ github.event.release.tag_name }}"
           version="${version#v}"
-          shopt -s nullglob
-          for dir in artifacts/native-*/; do
-            platform=$(basename "$dir")
-            platform=${platform#native-}
-            name="openzl_native-v${version}-${platform}.tar.gz"
-            tar -czf "release-assets/$name" -C "$dir" .
-            echo "packed $name"
-          done
-          count=$(ls -1 release-assets | wc -l)
-          if [ "$count" -eq 0 ]; then
-            echo "No prebuilds were produced by any platform." >&2
-            exit 1
-          fi
-          echo "packed $count prebuild(s)"
+          mkdir -p release-assets
+          tar -czf "release-assets/openzl_native-v${version}-${{ matrix.platform }}.tar.gz" \
+            -C "prebuilds/${{ matrix.platform }}" .
           ls -la release-assets
 
-      - name: Upload to GitHub Release
+      - name: Attach prebuild to release
+        if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2
         with:
           files: release-assets/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  attach-release:
+    # `always()` is essential: a failing platform (Windows never compiles, and
+    # macOS runners here can queue for hours) must not suppress this check.
+    # Delivery itself no longer depends on this job — each matrix leg attaches
+    # its own asset — so this only reports whether anything actually landed.
+    if: always() && github.event_name == 'release'
+    needs: build-native
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Verify at least one prebuild is attached
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.event.release.tag_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          names=$(gh release view "$TAG" --repo "$REPO" --json assets \
+            -q '.assets[].name' | grep '^openzl_native-' || true)
+          count=$(printf '%s' "$names" | grep -c . || true)
+          echo "attached prebuilds: ${count:-0}"
+          printf '%s\n' "$names"
+          if [ "${count:-0}" -eq 0 ]; then
+            echo "No prebuild reached the release; installs will fall back to CLI/gzip." >&2
+            exit 1
+          fi

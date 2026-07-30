@@ -58,10 +58,16 @@ const workflow = fs.readFileSync(
 );
 ok(
   'workflow packs the same name shape',
-  workflow.includes('openzl_native-v${version}-${platform}.tar.gz')
+  workflow.includes('openzl_native-v${version}-${{ matrix.platform }}.tar.gz')
+);
+// Delivery must not be gated on a gather job: each leg attaches its own asset,
+// so a platform stuck in the runner queue cannot hold back the ones that built.
+ok(
+  'each platform attaches its own release asset',
+  /- name: Attach prebuild to release\s+if: github\.event_name == 'release'/.test(workflow)
 );
 ok(
-  'workflow attaches prebuilds even when a platform fails',
+  'release-asset check still runs when a platform fails',
   /if:\s*always\(\)\s*&&\s*github\.event_name == 'release'/.test(workflow)
 );
 ok('workflow builds linux-x64', workflow.includes('platform: linux-x64'));

@@ -4,6 +4,11 @@ on:
   release:
     types: [ published ]
 
+# Superseded runs only add to the runner queue; drop them.
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   publish:
     runs-on: ubuntu-latest
