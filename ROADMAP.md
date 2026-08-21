@@ -4,11 +4,11 @@
 >
 > **Series 2 (Phases 7+):** make it **infrastructure people trust next to gzip and zstd** — not a hobby npm package.
 >
-> **Heroes:** gzip and zstd remain the default highway. OpenZL is the specialized lane when data shape + training pay off.
+> **Heroes:** gzip, brotli, and zstd remain the default highway. OpenZL is the specialized lane when data shape + training pay off.
 >
 > **Not the goal:** claiming “always better than zstd.” **The goal:** boring install, multi-codec negotiate, sharp wins on shaped data, opt-in clients only.
 
-**Current position:** Series 2 complete · package `0.4.0` tagged · prebuilds via GitHub Release
+**Current position:** Series 2 complete · package **`0.5.1`** (brotli · dual ESM/CJS · trust · Range/HEAD fixes) · ship/measure stage
 
 **Status legend:** `[ ]` not started · `[~]` in progress · `[x]` done
 

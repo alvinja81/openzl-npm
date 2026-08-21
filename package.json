@@ -1,6 +1,6 @@
 {
   "name": "openzl-express",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "HTTP compression for Node: gzip · brotli · zstd · optional OpenZL. Express + Fastify + core.",
   "type": "module",
   "main": "dist/cjs/index.js",
