@@ -57,6 +57,7 @@ if (typeof openzlMiddleware !== 'function') throw new Error('middleware');
 if (typeof fromExpress !== 'function') throw new Error('express subpath');
 if (typeof core.compress !== 'function') throw new Error('core.compress');
 if (typeof core.compressBrotli !== 'function') throw new Error('core.compressBrotli');
+if (typeof core.createOpenZLFetch !== 'function') throw new Error('core.createOpenZLFetch');
 const payload = Buffer.from('hello world '.repeat(100));
 const gz = await compressGzip(payload);
 if (!gz.length) throw new Error('gzip empty');

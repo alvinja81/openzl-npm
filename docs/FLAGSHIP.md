@@ -77,11 +77,24 @@ app.use(openzlMiddleware({
 }));
 ```
 
+## Production checklist
+
+1. Save 10–20 real response bodies (plus one held-out file you did not train on).
+2. `npx openzl-train ./samples -o ./profiles/my.zlc --held-out ./held-out.json`
+3. Enable OpenZL **only** if the verdict is `enable`. Otherwise keep br/zstd.
+4. Clients: `createOpenZLFetch()` from `openzl-express/core`, or send `Accept-Encoding: openzl, zstd, br, gzip` and call `decompress()`.
+5. Limit OpenZL to winning routes with `selectProfile`.
+6. Wire `onCompress` to metrics. Leave `debugHeaders` off.
+7. Re-train when the payload shape changes.
+
+Measured numbers and a copy-paste reproduce path: [CASE-STUDY.md](./CASE-STUDY.md).
+
 ## When *not* to use OpenZL
 
 - One-off pages, HTML, blog prose (use gzip/zstd).
 - Clients you don’t control (public browsers without a decoder).
 - Payloads that change shape every request (training won’t stick).
+- A held-out compare that loses to zstd or br.
 
 ## Related
 

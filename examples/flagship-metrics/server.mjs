@@ -21,20 +21,32 @@
 import express from 'express';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
-import {
-  openzlMiddleware,
-  compress,
-  compressGzip,
-  compressZstd,
-  isZstdAvailable,
-  isNativeAvailable,
-  getActiveBackend,
-  decompress
-} from '../../dist/index.js';
+import { fileURLToPath, pathToFileURL } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '../..');
+
+const loadLib = async () => {
+  try {
+    return await import('openzl-express');
+  } catch {
+    return import(pathToFileURL(path.join(root, 'dist/index.js')).href);
+  }
+};
+
+const {
+  openzlMiddleware,
+  compress,
+  compressGzip,
+  compressBrotli,
+  compressZstd,
+  isZstdAvailable,
+  isBrotliAvailable,
+  isNativeAvailable,
+  getActiveBackend,
+  decompress
+} = await loadLib();
+
 const PORT = Number(process.env.PORT) || 3456;
 
 const samplesDir = path.join(root, 'profiles/samples/timeseries');
@@ -159,6 +171,14 @@ app.get('/api/compare', async (_req, res) => {
   const gz = await compressGzip(plain);
   const tGz = performance.now() - t1;
 
+  let br = null;
+  let tBr = null;
+  if (isBrotliAvailable()) {
+    const tB = performance.now();
+    br = await compressBrotli(plain);
+    tBr = performance.now() - tB;
+  }
+
   let zstd = null;
   let tZstd = null;
   if (isZstdAvailable()) {
@@ -186,6 +206,13 @@ app.get('/api/compare', async (_req, res) => {
         ratioPct: +((gz.length / plain.length) * 100).toFixed(2),
         encodeMs: +tGz.toFixed(3)
       },
+      br: br
+        ? {
+            bytes: br.length,
+            ratioPct: +((br.length / plain.length) * 100).toFixed(2),
+            encodeMs: +tBr.toFixed(3)
+          }
+        : { available: false },
       zstd: zstd
         ? {
             bytes: zstd.length,
@@ -196,6 +223,7 @@ app.get('/api/compare', async (_req, res) => {
     },
     roundtripOk: ok,
     savingsVsGzipBytes: gz.length - zl.length,
+    savingsVsBrBytes: br ? br.length - zl.length : null,
     savingsVsZstdBytes: zstd ? zstd.length - zl.length : null,
     recentOnCompress: metricsLog.slice(-5)
   });
@@ -248,6 +276,7 @@ curl -sH 'Accept-Encoding: gzip'  -D- http://127.0.0.1:${PORT}/api/metrics -o /d
         ['plain', d.plainBytes, '100%', '—'],
         ['openzl', c.openzl.bytes, c.openzl.ratioPct + '%', c.openzl.encodeMs + ' ms'],
         ['gzip', c.gzip.bytes, c.gzip.ratioPct + '%', c.gzip.encodeMs + ' ms'],
+        ['br', c.br && c.br.bytes != null ? c.br.bytes : 'n/a', c.br && c.br.ratioPct != null ? c.br.ratioPct + '%' : '—', c.br && c.br.encodeMs != null ? c.br.encodeMs + ' ms' : '—'],
         ['zstd', c.zstd.bytes ?? 'n/a', (c.zstd.ratioPct != null ? c.zstd.ratioPct + '%' : '—'), c.zstd.encodeMs != null ? c.zstd.encodeMs + ' ms' : '—']
       ];
       let html = '<p class="muted">source: ' + (d.source || '') + ' · ' + d.profile + '</p>';
@@ -258,6 +287,7 @@ curl -sH 'Accept-Encoding: gzip'  -D- http://127.0.0.1:${PORT}/api/metrics -o /d
       }
       html += '</table>';
       html += '<p>Savings vs gzip: <strong>' + d.savingsVsGzipBytes + '</strong> bytes';
+      if (d.savingsVsBrBytes != null) html += ' · vs br: <strong>' + d.savingsVsBrBytes + '</strong> bytes';
       if (d.savingsVsZstdBytes != null) html += ' · vs zstd: <strong>' + d.savingsVsZstdBytes + '</strong> bytes';
       html += '</p><pre>' + JSON.stringify(d, null, 2) + '</pre>';
       document.getElementById('out').outerHTML = html;

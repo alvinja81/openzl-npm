@@ -1,6 +1,7 @@
 # openzl-express
 
-**HTTP compression middleware for Node.js** — negotiate **gzip**, **brotli**, **zstd**, and optional **[OpenZL](https://github.com/facebook/openzl)**.
+**HTTP compression for Node.js** — **gzip**, **brotli**, and **zstd** by default.
+Optional **[OpenZL](https://github.com/facebook/openzl)** when you train on shaped data and the client opts in.
 
 [![npm version](https://img.shields.io/npm/v/openzl-express.svg)](https://www.npmjs.com/package/openzl-express)
 [![Node.js](https://img.shields.io/node/v/openzl-express.svg)](https://nodejs.org)
@@ -12,6 +13,13 @@ npm install openzl-express
 
 Works with **Express**, **Fastify**, or **no framework** (`openzl-express/core`),
 from both **ESM** (`import`) and **CommonJS** (`require`).
+
+Most people should use it as ordinary HTTP compression — gzip, brotli, zstd —
+the same way they use the `compression` package. OpenZL is a second step,
+only after you measure it on your own payloads.
+
+Replacing `compression` or `@fastify/compress`? Start here: **[docs/MIGRATION.md](docs/MIGRATION.md)**.
+You do not need OpenZL for that path.
 
 ---
 
@@ -56,6 +64,14 @@ this payload beat gzip on both size and speed. Tune with `brotliQuality`.
 
 OpenZL is **not** “always better” — on the JSON above it lost to brotli and zstd.
 It earns its place on *shaped* data after training. Measure on *your* payloads.
+
+### 1.0 guarantees
+
+- `openzl` is **never** chosen for `Accept-Encoding: *`
+- `debugHeaders` default **off**
+- Browser WASM is **experimental** (`openzl-express/browser`)
+- Missing OpenZL native/CLI **does not fail install**; gzip/br/zstd keep working
+- Native OpenZL prebuilds: **linux-x64, linux-arm64, darwin-arm64** only (see table below)
 
 ---
 
@@ -142,8 +158,6 @@ const app = express();
 app.use(
   openzlMiddleware({
     threshold: 1024,          // skip bodies smaller than this
-    profile: 'timeseries',    // or 'serial' | 'api-list' | path to .zlc
-    fallbackToGzip: true,
   })
 );
 
@@ -161,7 +175,9 @@ import Fastify from 'fastify';
 import { openzlFastify } from 'openzl-express/fastify';
 
 const app = Fastify();
-await app.register(openzlFastify, { threshold: 1024, profile: 'serial' });
+await app.register(openzlFastify, { threshold: 1024 });
+// gzip/br/zstd stream when you `reply.send` a Node Readable.
+// JSON/string bodies are compressed after they are fully produced.
 app.get('/api/data', async () => ({ ok: true, items: [] }));
 await app.listen({ port: 3000 });
 ```
@@ -243,6 +259,8 @@ curl -sD- -H 'Accept-Encoding: openzl' http://127.0.0.1:3456/t -o /tmp/t.zl | gr
 
 ### 5) Decode OpenZL in Node
 
+Hand-rolled:
+
 ```ts
 import { decompress } from 'openzl-express';
 import fs from 'fs';
@@ -250,6 +268,16 @@ import fs from 'fs';
 const frame = fs.readFileSync('/tmp/t.zl');
 const plain = await decompress(frame);
 console.log(JSON.parse(plain.toString()));
+```
+
+Or wrap `fetch` so a Node client opts in and inflates OpenZL for you (gzip/br/zstd stay with the runtime):
+
+```ts
+import { createOpenZLFetch } from 'openzl-express/core';
+
+const fetchZ = createOpenZLFetch();
+const res = await fetchZ('http://127.0.0.1:3456/api/metrics');
+const json = await res.json();
 ```
 
 ### 6) Compare sizes (your role models: gzip, br & zstd)
@@ -328,7 +356,7 @@ Browsers almost never send `openzl`, so they get **br/zstd/gzip** only.
 | `profile` | `'serial'` | OpenZL profile name or path to `.zlc` |
 | `selectProfile` | — | `(req, …) => profile` per request |
 | `fallbackToGzip` | `true` | On OpenZL failure, re-negotiate to zstd/br/gzip. `false` sends the body uncompressed instead |
-| `preferStreamGzip` | `true` | Prefer streaming gzip/br/zstd for `sendFile` |
+| `preferStreamGzip` | `true` | Prefer streaming gzip/br/zstd for Express `sendFile` and Fastify `Readable` payloads when OpenZL was negotiated |
 | `allowZstd` | auto | Set `false` to disable zstd |
 | `allowBrotli` | auto | Set `false` to disable brotli |
 | `brotliQuality` | `4` | Brotli quality 0–11. Raise only for cacheable responses — 11 is ~160× slower |
@@ -359,6 +387,8 @@ app.use(openzlMiddleware({
     req.path.startsWith('/api/metrics') ? './my-metrics.zlc' : 'serial',
 }));
 ```
+
+`openzl-train` then prints a gzip / br / zstd / openzl table on a held-out file and a verdict (`enable` or `keep-heroes`). Pass `--strict` to exit 2 when OpenZL loses.
 
 **Pass/fail rule:** if openzl is larger than zstd/br (or gzip when those are missing) on held-out samples, **don’t enable openzl** for that route.
 
@@ -435,10 +465,13 @@ openzlMiddleware({
 
 | Doc | Topic |
 |-----|--------|
+| [docs/MIGRATION.md](https://github.com/alvinja81/openzl-npm/blob/main/docs/MIGRATION.md) | Replace `compression` / `@fastify/compress` |
 | [docs/FLAGSHIP.md](https://github.com/alvinja81/openzl-npm/blob/main/docs/FLAGSHIP.md) | Metrics / timeseries use case |
+| [docs/CASE-STUDY.md](https://github.com/alvinja81/openzl-npm/blob/main/docs/CASE-STUDY.md) | Measured corpora + production checklist |
 | [docs/COMPAT.md](https://github.com/alvinja81/openzl-npm/blob/main/docs/COMPAT.md) | Errors, limits, frame compatibility |
 | [docs/BROWSER.md](https://github.com/alvinja81/openzl-npm/blob/main/docs/BROWSER.md) | Why browser WASM is experimental |
 | [docs/RELEASE.md](https://github.com/alvinja81/openzl-npm/blob/main/docs/RELEASE.md) | Maintainers: release process |
+| [SECURITY.md](https://github.com/alvinja81/openzl-npm/blob/main/SECURITY.md) | Vulnerability reporting |
 | [CONTRIBUTING.md](https://github.com/alvinja81/openzl-npm/blob/main/CONTRIBUTING.md) | Contributing |
 
 ---

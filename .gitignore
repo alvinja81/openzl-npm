@@ -22,8 +22,10 @@ openzl/cmakebuild/
 # Platform prebuilds are produced by CI / install-native (optional commit)
 prebuilds/
 
-# Generated training samples (compressors *.zlc are shipped)
-profiles/samples/
+# Extra train corpora; timeseries stays in git for the flagship demo
+profiles/samples/api-list/
+profiles/samples/binary/
+profiles/samples/prose/
 tmp-serial.zl
 tmp-trained.zl
 

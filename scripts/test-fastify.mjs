@@ -5,6 +5,7 @@
 import Fastify from 'fastify';
 import http from 'http';
 import zlib from 'zlib';
+import { Readable } from 'stream';
 import {
   openzlFastify,
   decompress,
@@ -35,6 +36,19 @@ app.get('/no-transform', async (_req, reply) => {
 app.get('/vary', async (_req, reply) => {
   reply.header('vary', 'Origin');
   return big;
+});
+app.get('/stream', async (_req, reply) => {
+  reply.type('application/json');
+  const buf = Buffer.from(JSON.stringify(big));
+  const chunks = [];
+  const size = 256;
+  for (let i = 0; i < buf.length; i += size) chunks.push(buf.subarray(i, i + size));
+  return Readable.from(chunks);
+});
+app.get('/partial', async (_req, reply) => {
+  reply.code(206);
+  reply.header('content-range', 'bytes 0-10/200');
+  return 'abcdefghijk';
 });
 await app.listen({ port: 0, host: '127.0.0.1' });
 const port = app.server.address().port;
@@ -136,6 +150,51 @@ if (isBrotliAvailable()) {
   failed += await check('browser-like → br', 'gzip, deflate, br', 'br', decompressBrotli);
 } else {
   console.log('⊘ brotli unavailable — skip brotli cases');
+}
+
+{
+  const r = await request('gzip', '/stream');
+  let ok = r.ce === 'gzip';
+  let detail = r.ce || 'identity';
+  if (ok) {
+    try {
+      const plain = zlib.gunzipSync(r.body);
+      if (!plain.toString().includes('item-0')) {
+        ok = false;
+        detail = 'bad payload';
+      }
+    } catch (e) {
+      ok = false;
+      detail = e.message;
+    }
+  }
+  console.log(ok ? '✓' : '✗', 'fastify stream gzip', detail, r.body.length);
+  if (!ok) failed++;
+}
+if (isBrotliAvailable()) {
+  const r = await request('br', '/stream');
+  let ok = r.ce === 'br';
+  let detail = r.ce || 'identity';
+  if (ok) {
+    try {
+      const plain = await decompressBrotli(r.body);
+      if (!plain.toString().includes('item-0')) {
+        ok = false;
+        detail = 'bad payload';
+      }
+    } catch (e) {
+      ok = false;
+      detail = e.message;
+    }
+  }
+  console.log(ok ? '✓' : '✗', 'fastify stream br', detail, r.body.length);
+  if (!ok) failed++;
+}
+{
+  const r = await request('gzip', '/partial');
+  const ok = !r.ce && r.body.toString() === 'abcdefghijk';
+  console.log(ok ? '✓' : '✗', 'fastify 206 not re-encoded', r.ce || 'identity');
+  if (!ok) failed++;
 }
 
 if (openzlOk) {

@@ -5,16 +5,16 @@ Live before/after for the Phase 12 product story, wired to **real training sampl
 ## Run
 
 ```bash
-# from package root
-npm run build
+# from this repo
+npm run demo:flagship
 
-# optional: retrain a demo-specific compressor from those samples
+# after `npm install openzl-express` (tarball includes examples + samples)
+node node_modules/openzl-express/examples/flagship-metrics/server.mjs
+
+# optional: retrain
 npx openzl-train profiles/samples/timeseries \
   -o examples/flagship-metrics/trained-metrics.zlc \
   -p serial --max-time 30
-
-npm run demo:flagship
-# or: node examples/flagship-metrics/server.mjs
 ```
 
 Open **http://127.0.0.1:3456/**

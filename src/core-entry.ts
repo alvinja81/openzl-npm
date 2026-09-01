@@ -22,6 +22,8 @@ export {
   DEFAULT_BROTLI_QUALITY,
   pickEncoding,
   parseAcceptEncoding,
+  createOpenZLFetch,
+  decodeOpenZLResponse,
   checkCLIAvailable,
   resetCLICache,
   shutdownOpenZL,
@@ -53,7 +55,9 @@ export type {
   CompressOptions,
   DecompressOptions,
   ResolvedProfile,
-  OpenZLErrorCode
+  OpenZLErrorCode,
+  CreateOpenZLFetchOptions,
+  OpenZLFetch
 } from './core/index.js';
 
 export {

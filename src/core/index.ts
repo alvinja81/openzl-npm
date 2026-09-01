@@ -54,6 +54,9 @@ export type {
   ResolvedProfile
 } from './engine.js';
 
+export { createOpenZLFetch, decodeOpenZLResponse } from './client.js';
+export type { CreateOpenZLFetchOptions, OpenZLFetch } from './client.js';
+
 export { compressGzip, decompressGzip, createGzipStream } from './gzip.js';
 
 export {

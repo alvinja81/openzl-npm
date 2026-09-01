@@ -28,6 +28,9 @@ Options:
   -p, --profile <name>    Base profile for training (default: serial)
   --num-samples <n>       Samples to use (default: 12)
   --max-time <secs>       Trainer time budget (default: 40)
+  --held-out <file>       File to compare against gzip/br/zstd (default: last sample)
+  --no-compare            Skip the held-out size table
+  --strict                Exit 2 if OpenZL loses to gzip/br/zstd
   -h, --help              Show help
 
 Examples:
@@ -68,6 +71,9 @@ let output;
 let profile = 'serial';
 let numSamples = 12;
 let maxTime = 40;
+let heldOutArg;
+let doCompare = true;
+let strict = false;
 
 for (let i = 0; i < args.length; i++) {
   const a = args[i];
@@ -79,6 +85,12 @@ for (let i = 0; i < args.length; i++) {
     numSamples = Number(args[++i]);
   } else if (a === '--max-time') {
     maxTime = Number(args[++i]);
+  } else if (a === '--held-out') {
+    heldOutArg = args[++i];
+  } else if (a === '--no-compare') {
+    doCompare = false;
+  } else if (a === '--strict') {
+    strict = true;
   } else if (!a.startsWith('-') && !samplesDir) {
     samplesDir = a;
   } else {
@@ -148,3 +160,25 @@ console.log(`\nWrote ${output} (${st.size} bytes)`);
 console.log(`\nUse in middleware:`);
 console.log(`  openzlMiddleware({ profile: ${JSON.stringify(output)} })`);
 console.log(`  // or copy into your app and pass the path / relative name`);
+
+if (doCompare) {
+  const { compareHeldOut, formatCompareTable } = await import('./lib/compare-profile.mjs');
+  const heldPath = heldOutArg
+    ? path.resolve(heldOutArg)
+    : path.join(samplesDir, [...entries].sort()[entries.length - 1]);
+  if (!fs.existsSync(heldPath)) {
+    console.error(`Held-out file not found: ${heldPath}`);
+    process.exit(1);
+  }
+  const plain = fs.readFileSync(heldPath);
+  const result = await compareHeldOut(plain, { profile: output });
+  console.log('\n' + formatCompareTable(result, { heldOut: heldPath }));
+  if (result.verdict === 'enable') {
+    console.log('\nEnable OpenZL on this route. Keep gzip/zstd/br in Accept-Encoding as fallback.');
+  } else {
+    console.log('\nLeave OpenZL off for this shape.');
+  }
+  if (strict && result.verdict !== 'enable') {
+    process.exit(2);
+  }
+}

@@ -8,7 +8,7 @@
 >
 > **Not the goal:** claiming “always better than zstd.” **The goal:** boring install, multi-codec negotiate, sharp wins on shaped data, opt-in clients only.
 
-**Current position:** Series 2 complete · package **`0.5.1`** (brotli · dual ESM/CJS · trust · Range/HEAD fixes) · ship/measure stage
+**Current position:** **1.0.0** — publish + gzip/br/zstd on-ramp + metrics proof (**enable OpenZL** on held-out timeseries). Level 5 (Hono / rename / WASM / Windows native) stays parked until a real user pulls.
 
 **Status legend:** `[ ]` not started · `[~]` in progress · `[x]` done
 
@@ -383,7 +383,7 @@ npm run build:wasm        # browser decoder
 
 | Question | Answer |
 |----------|--------|
-| Can users use it now? | **Yes** — Express + gzip/OpenZL opt-in at 0.3.0 |
-| Is Series 1 done? | **Yes** |
-| What’s left for worldwide? | **Series 2: zstd peer, install proof, core split, trust, brand** |
-| Next implement? | **Phase 7 — multi-codec negotiate + middleware** |
+| Can users use it now? | **Yes** — gzip/br/zstd on Node ≥ 18; OpenZL opt-in on linux + Apple Silicon |
+| Is Series 1 / 2 done? | **Yes** |
+| What is 1.0? | Contract + migration docs + Fastify streams + client helper + train compare |
+| What’s later? | Rename, Hono/Nest, WASM shrink, Windows native — only if a real user pulls |

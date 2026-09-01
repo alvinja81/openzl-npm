@@ -3,9 +3,34 @@
 All notable changes to this project are documented here.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
-This project follows [Semantic Versioning](https://semver.org/) for the `0.x` line (breaking changes allowed with minor bumps until 1.0).
+This project follows [Semantic Versioning](https://semver.org/). The `0.x` line allowed breaking minor bumps; **1.0.0** is the first stable contract.
 
 ## [Unreleased]
+
+## [1.0.0] — 2026-08-30
+
+1.0 is a **contract cut**: gzip / brotli / zstd are the default highway; OpenZL stays opt-in. No experimental defaults.
+
+### Added
+- **`docs/MIGRATION.md`** — replacing `compression` and `@fastify/compress` (option map, negotiation differences, do not stack).
+- **`SECURITY.md`** — private advisory path and supported versions.
+- **`docs/CASE-STUDY.md`** — measured corpora, reproduce commands, production checklist.
+- **Node `createOpenZLFetch` / `decodeOpenZLResponse`** (`openzl-express/core`) — send `Accept-Encoding: openzl, zstd, br, gzip` and inflate OpenZL bodies. gzip/br/zstd stay with the runtime.
+- **`npx openzl-train` held-out compare** — after training, prints gzip / br / zstd / openzl sizes and a verdict (`enable` | `keep-heroes`). `--strict` exits 2 on a loss. `--no-compare` skips.
+- **Fastify streaming** for gzip / br / zstd when `reply.send` is a Node `Readable`. JSON/string bodies still buffer. 204/205/304/206 are not re-encoded. OpenZL + stream prefers a hero codec when the client also accepts one (`preferStreamGzip`, default true).
+- **HTTP middleware bench** — `npm run bench:http` → `bench/results/middleware.md`.
+- Flagship demo: imports the published package when installed, includes **br** in `/api/compare`, ships `profiles/samples` in the tarball.
+
+### Changed
+- README leads with gzip/br/zstd. 30-second Express start no longer sets an OpenZL `profile`.
+- Supported-platform table is a 1.0 guarantee: OpenZL native prebuilds on linux-x64, linux-arm64, darwin-arm64 only.
+- `docs/RELEASE.md` examples updated off 0.4.0.
+
+### 1.0 guarantees (unchanged behavior, now promised)
+- `openzl` never via `Accept-Encoding: *`
+- `debugHeaders` default false
+- Browser WASM experimental
+- Install never fails if native/CLI is missing
 
 ## [0.5.1] — 2026-08-21
 
@@ -148,6 +173,7 @@ This project follows [Semantic Versioning](https://semver.org/) for the `0.x` li
 
 ---
 
+[1.0.0]: https://github.com/alvinja81/openzl-npm/compare/v0.5.1...v1.0.0
 [0.5.1]: https://github.com/alvinja81/openzl-npm/compare/v0.4.2...v0.5.1
 [0.5.0]: https://github.com/alvinja81/openzl-npm/blob/main/CHANGELOG.md#050--2026-07-30
 [0.4.3]: https://github.com/alvinja81/openzl-npm/blob/main/CHANGELOG.md#043--2026-07-30

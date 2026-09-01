@@ -26,13 +26,24 @@ grep ZL_LIBRARY_VERSION openzl/include/openzl/zl_version.h
 
 | Header | Values |
 |--------|--------|
-| `Accept-Encoding` (client) | `openzl` (explicit), `zstd`, `gzip`, `*` |
-| `Content-Encoding` (server) | `openzl` \| `zstd` \| `gzip` \| (omit for identity) |
+| `Accept-Encoding` (client) | `openzl` (explicit), `zstd`, `br`, `gzip`, `*` |
+| `Content-Encoding` (server) | `openzl` \| `zstd` \| `br` \| `gzip` \| (omit for identity) |
 | `Vary` | always `Accept-Encoding` when middleware runs |
 
 - **`openzl` is never selected via `*`** — clients must opt in.
-- **`*` → gzip only** by default (not zstd, not openzl).
+- **`*` → gzip only** by default (not zstd, not br, not openzl).
 - zstd requires a Node build with zlib zstd (typically Node ≥ 22.15).
+
+## Supported platforms (1.0)
+
+| Path | Platforms |
+|------|-----------|
+| gzip + brotli | Node ≥ 18, all OS (including Windows) |
+| zstd | Node zlib with zstd (typically ≥ 22.15), all OS |
+| OpenZL **native** prebuild | linux-x64, linux-arm64, darwin-arm64 |
+| OpenZL encode elsewhere | `zli` CLI if installed; otherwise heroes only |
+| OpenZL native on win32 / musl / darwin-x64 | **Not published** — build from source where possible; Windows MSVC still fails upstream |
+| Browser WASM | Experimental — not a 1.0 promise |
 
 ## Encode / decode backends
 
@@ -42,7 +53,7 @@ grep ZL_LIBRARY_VERSION openzl/include/openzl/zl_version.h
 | Worker pool → `zli` pipes | serial | universal |
 | One-shot CLI | any profile / `-c` trained | universal |
 | Browser WASM (`browser/dist`) | — (decode only) | universal (wasm64) |
-| Node zlib | gzip / zstd | gzip / zstd |
+| Node zlib | gzip / br / zstd | gzip / br / zstd |
 
 ### Interop expectation
 

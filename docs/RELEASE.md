@@ -2,6 +2,8 @@
 
 Use this when cutting a public version of **openzl-express** and **@amirja811/openzl-cli**.
 
+Current line: **1.0.x**. Prebuild gate: the GitHub Release must attach native addons for **linux-x64**, **linux-arm64**, and **darwin-arm64**. Do not publish if those three assets are missing.
+
 ## Prerequisites
 
 - [ ] `main` green on CI (`ci.yml`)
@@ -15,7 +17,7 @@ Use this when cutting a public version of **openzl-express** and **@amirja811/op
 
 | Package | Field | Notes |
 |---------|--------|--------|
-| `openzl-express` | `version` | e.g. `0.4.0` |
+| `openzl-express` | `version` | e.g. `1.0.0` |
 | `openzl-express` | `optionalDependencies.@amirja811/openzl-cli` | `^0.3.0` or matching |
 | `@amirja811/openzl-cli` | `version` | published from monorepo `@openzl-cli/` |
 
@@ -33,9 +35,9 @@ node scripts/pack-smoke.mjs
 
 ```bash
 git status   # clean
-git tag -a v0.4.0 -m "v0.4.0 multi-codec + adapters"
+git tag -a v1.0.0 -m "v1.0.0 gzip/br/zstd highway, OpenZL opt-in"
 git push origin main
-git push origin v0.4.0
+git push origin v1.0.0
 ```
 
 Creating a **GitHub Release** from the tag triggers:
@@ -54,7 +56,7 @@ Prefer **GitHub → Releases → Draft from tag** so release event fires cleanly
 # Clean machine / empty dir
 mkdir /tmp/ozl-verify && cd /tmp/ozl-verify
 npm init -y
-npm install openzl-express@0.4.0
+npm install openzl-express@1.0.0
 node -e "import('openzl-express').then(m => console.log(Object.keys(m).slice(0,12)))"
 node -e "import('openzl-express').then(m => console.log('zstd', m.isZstdAvailable()))"
 
@@ -85,7 +87,7 @@ ls node_modules/openzl-express/prebuilds || echo "no prebuild dir (gzip/zstd sti
 
 ## 6. Rollback
 
-- npm does not unpublish easily; publish a patch `0.4.1` if needed.
+- npm does not unpublish easily; publish a patch `1.0.1` if needed.
 - GitHub Release can be edited to re-upload assets.
 
 ## Failure modes
